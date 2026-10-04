@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tussenstanden</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: één scherm op Hub-formaat (1024x600): balk met competities bovenin, daaronder een raster van twee kolommen met wedstrijden. */
+:root{
+  color-scheme:dark;
+  --veld:#0d1a16;      /* achtergrond, donker grasgroen */
+  --vlak:#16271f;      /* wedstrijdregel */
+  --lijn:#274236;
+  --tekst:#f1f5ee;
+  --zacht:#9fb3a6;
+  --live:#ffd23f;      /* lichtkrant-geel voor live en doelpunten */
+  --font:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--veld);color:var(--tekst);font-family:var(--font);display:flex;flex-direction:column;padding:10px 16px 12px;gap:10px;overflow:hidden}
+header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tab{font:600 22px var(--font);letter-spacing:.03em;text-transform:uppercase;color:var(--zacht);background:none;border:2px solid var(--lijn);border-radius:6px;padding:4px 12px;cursor:pointer}
+.tab[aria-pressed="true"]{color:var(--veld);background:var(--tekst);border-color:var(--tekst)}
+.tab .n{color:var(--live);margin-left:6px}
+.tab[aria-pressed="true"] .n{color:#8a5a00}
+.tab:focus-visible,.wissel:focus-visible{outline:3px solid var(--live);outline-offset:2px}
+.rechts{margin-left:auto;display:flex;align-items:center;gap:14px}
+.wissel{font:600 18px var(--font);color:var(--zacht);background:none;border:0;cursor:pointer;text-transform:uppercase;letter-spacing:.03em}
+.wissel[aria-pressed="true"]{color:var(--live)}
+#klok{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+#kop{font-size:18px;color:var(--zacht);text-transform:uppercase;letter-spacing:.06em}
+main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,1fr);gap:8px}
+.duel{background:var(--vlak);border-radius:6px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:4px 12px;position:relative;max-height:110px}
+.club{display:flex;align-items:center;gap:8px;min-width:0;font-size:clamp(18px,2.6vw,28px);font-weight:600}
+.club span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.club.uit{flex-direction:row-reverse;text-align:right}
+.club img{width:clamp(24px,3.4vw,38px);height:clamp(24px,3.4vw,38px);object-fit:contain;flex:none}
+.midden{text-align:center;min-width:92px}
+.stand{font-size:clamp(28px,4.4vw,46px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.status{font-size:17px;color:var(--zacht);font-weight:600;letter-spacing:.03em}
+.duel.live .status{color:var(--live)}
+.duel.live::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:4px;background:var(--live);border-radius:2px}
+.duel.voor .stand{font-size:clamp(22px,3.2vw,34px);color:var(--zacht)}
+.duel.goal{animation:goal 1s ease-in-out 8}
+@keyframes goal{50%{background:var(--live);color:var(--veld)}}
+.leeg{grid-column:1/-1;align-self:center;text-align:center;font-size:28px;color:var(--zacht)}
+#flits{position:fixed;left:16px;right:16px;bottom:12px;background:var(--live);color:var(--veld);font-size:30px;font-weight:700;padding:8px 16px;border-radius:6px;text-align:center}
+[hidden]{display:none!important}
+@media (max-width:640px){main{grid-template-columns:1fr}body{overflow:auto}.duel{min-height:64px}}
+@media (prefers-reduced-motion:reduce){.duel.goal{animation:none;outline:3px solid var(--live)}}
+</style>
+</head>
+<body>
+<header>
+  <div id="tabs" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  <div class="rechts">
+    <span id="kop"></span>
+    <button class="wissel" id="wissel" aria-pressed="true" title="Automatisch wisselen tussen competities">Wisselen aan</button>
+    <span id="klok"></span>
+  </div>
+</header>
+<main id="lijst"><p class="leeg">Standen laden…</p></main>
+<div id="flits" hidden></div>
+<script>
+// ---- Instellingen: pas hier aan wat je wilt ----
+const COMPETITIES = [
+  {code:"ned.1", naam:"Eredivisie"},
+  {code:"eng.1", naam:"Premier League"},
+  {code:"ger.1", naam:"Bundesliga"},
+  {code:"ned.2", naam:"KKD"},
+];
+const VERVERS_SEC = 30;   // hoe vaak de standen worden opgehaald
+const WISSEL_SEC  = 20;   // hoe lang elke competitie in beeld blijft
+// -------------------------------------------------
+
+const data = {};          // code -> {dagLabel, duels:[]}
+const volgendeDag = {};   // code -> programma van de eerstvolgende speeldag (één keer opgehaald)
+const vorige = {};      // wedstrijd-id -> "thuis-uit"
+let actief = 0, wisselen = true, eersteKeer = true, flitsTimer;
+
+const $ = id => document.getElementById(id);
+const ymd = d => d.getFullYear() + String(d.getMonth()+1).padStart(2,"0") + String(d.getDate()).padStart(2,"0");
+const dagSleutel = d => d.toDateString();
+
+function verwerk(ev){
+  const c = ev.competitions[0], t = c.status.type;
+  const thuis = c.competitors.find(x => x.homeAway === "home"), uit = c.competitors.find(x => x.homeAway === "away");
+  const start = new Date(ev.date);
+  let status, soort;
+  if (t.state === "in"){ soort = "live"; status = t.name === "STATUS_HALFTIME" ? "RUST" : c.status.displayClock; }
+  else if (t.state === "post"){ soort = "na"; status = t.completed ? "Afgelopen" : t.description; }
+  else { soort = "voor"; status = t.name === "STATUS_SCHEDULED" ? "" : t.description; }
+  const club = x => ({naam: x.team.shortDisplayName || x.team.displayName, logo: x.team.logo, score: x.score});
+  return {id: ev.id, start, soort, status, thuis: club(thuis), uit: club(uit)};
+}
+
+async function haal(comp){
+  const nu = new Date();
+  const basis = `https://site.api.espn.com/apis/site/v2/sports/soccer/${comp.code}/scoreboard?dates=`;
+  const lees = async dag => {
+    const r = await fetch(basis + dag, {cache:"no-store"});
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  };
+  const lijst = j => (j.events || []).map(verwerk).sort((a,b) => a.start - b.start);
+  const j = await lees(ymd(nu));
+  let duels = lijst(j), dagLabel = "Vandaag";
+  // Zijn er vandaag geen wedstrijden, dan de eerstvolgende speeldag uit de kalender van de competitie.
+  if (!duels.length){
+    const kalender = (j.leagues?.[0]?.calendar || []).map(x => new Date(x)).filter(d => !isNaN(d) && ymd(d) > ymd(nu)).sort((a,b) => a - b);
+    if (kalender.length && volgendeDag[comp.code]?.dag !== ymd(kalender[0]))
+      volgendeDag[comp.code] = {dag: ymd(kalender[0]), duels: lijst(await lees(ymd(kalender[0])))};
+    const v = volgendeDag[comp.code];
+    if (v && v.duels.length){
+      duels = v.duels;
+      dagLabel = duels[0].start.toLocaleDateString("nl-NL", {weekday:"long", day:"numeric", month:"long"});
+    }
+  }
+  return {dagLabel, duels};
+}
+
+async function ververs(){
+  const goals = [];
+  await Promise.all(COMPETITIES.map(async comp => {
+    try {
+      const res = await haal(comp);
+      for (const d of res.duels){
+        const s = d.thuis.score + "-" + d.uit.score;
+        if (!eersteKeer && d.soort === "live" && vorige[d.id] !== undefined && vorige[d.id] !== s){ d.goal = true; goals.push({comp, d}); }
+        vorige[d.id] = s;
+      }
+      data[comp.code] = res;
+    } catch (e) {
+      if (!data[comp.code]) data[comp.code] = {fout:true, duels:[]};
+    }
+  }));
+  eersteKeer = false;
+  if (goals.length){
+    const g = goals[0];
+    actief = COMPETITIES.indexOf(g.comp);
+    toonFlits(goals.map(x => `GOAL  ${x.d.thuis.naam} ${x.d.thuis.score} - ${x.d.uit.score} ${x.d.uit.naam}`).join("   •   "));
+  }
+  teken();
+}
+
+function toonFlits(tekst){
+  $("flits").textContent = tekst; $("flits").hidden = false;
+  clearTimeout(flitsTimer); flitsTimer = setTimeout(() => $("flits").hidden = true, 12000);
+}
+
+const aantalLive = code => (data[code]?.duels || []).filter(d => d.soort === "live").length;
+
+function teken(){
+  const tabs = $("tabs"); tabs.textContent = "";
+  COMPETITIES.forEach((c,i) => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.setAttribute("aria-pressed", i === actief);
+    b.textContent = c.naam;
+    const n = aantalLive(c.code);
+    if (n){ const s = document.createElement("span"); s.className = "n"; s.textContent = "● " + n; b.append(s); }
+    b.onclick = () => { actief = i; teken(); };
+    tabs.append(b);
+  });
+  const res = data[COMPETITIES[actief].code], lijst = $("lijst");
+  lijst.textContent = "";
+  $("kop").textContent = res && res.duels.length ? res.dagLabel : "";
+  if (!res || !res.duels.length){
+    const p = document.createElement("p"); p.className = "leeg";
+    p.textContent = !res ? "Standen laden…" : res.fout ? "Standen ophalen lukt niet. Controleer de internetverbinding; er wordt opnieuw geprobeerd." : "Geen wedstrijden gevonden.";
+    lijst.append(p); return;
+  }
+  for (const d of res.duels){
+    const el = document.createElement("div");
+    el.className = "duel " + d.soort + (d.goal ? " goal" : "");
+    const club = (c, kant) => {
+      const w = document.createElement("div"); w.className = "club " + kant;
+      if (c.logo){ const im = document.createElement("img"); im.src = c.logo; im.alt = ""; w.append(im); }
+      const s = document.createElement("span"); s.textContent = c.naam; w.append(s); return w;
+    };
+    const m = document.createElement("div"); m.className = "midden";
+    const st = document.createElement("div"); st.className = "stand";
+    st.textContent = d.soort === "voor" ? d.start.toLocaleTimeString("nl-NL", {hour:"2-digit", minute:"2-digit"}) : `${d.thuis.score} - ${d.uit.score}`;
+    m.append(st);
+    if (d.status){ const s = document.createElement("div"); s.className = "status"; s.textContent = d.status; m.append(s); }
+    el.append(club(d.thuis, "thuis"), m, club(d.uit, "uit"));
+    lijst.append(el);
+    d.goal = false;
+  }
+}
+
+function volgende(){
+  if (!wisselen || !$("flits").hidden) return;
+  // Wissel alleen tussen competities waar nu gespeeld wordt; anders tussen competities met wedstrijden.
+  let kandidaten = COMPETITIES.map((c,i) => i).filter(i => aantalLive(COMPETITIES[i].code));
+  if (!kandidaten.length) kandidaten = COMPETITIES.map((c,i) => i).filter(i => data[COMPETITIES[i].code]?.duels.length);
+  if (!kandidaten.length) return;
+  actief = kandidaten.find(i => i > actief) ?? kandidaten[0];
+  teken();
+}
+
+$("wissel").onclick = () => {
+  wisselen = !wisselen;
+  $("wissel").setAttribute("aria-pressed", wisselen);
+  $("wissel").textContent = wisselen ? "Wisselen aan" : "Wisselen uit";
+};
+const tik = () => $("klok").textContent = new Date().toLocaleTimeString("nl-NL", {hour:"2-digit", minute:"2-digit"});
+tik(); setInterval(tik, 5000);
+teken(); ververs();
+setInterval(ververs, VERVERS_SEC * 1000);
+setInterval(volgende, WISSEL_SEC * 1000);
+// Houd het scherm van de laptop wakker zolang de pagina open staat (als de browser dat toestaat).
+const wakker = () => navigator.wakeLock?.request("screen").catch(() => {});
+wakker(); document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && wakker());
+</script>
+<script>
+// Draait de pagina op een Cast-apparaat (zoals de Nest Hub), meld hem dan aan als cast-app en houd hem in beeld.
+if (/CrKey/.test(navigator.userAgent)) {
+  const sc = document.createElement("script");
+  sc.src = "https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js";
+  sc.onload = () => cast.framework.CastReceiverContext.getInstance().start({disableIdleTimeout: true});
+  document.head.append(sc);
+}
+</script>
+</body>
+</html>
