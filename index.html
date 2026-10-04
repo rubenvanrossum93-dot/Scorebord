@@ -95,7 +95,12 @@ const COMPETITIES = [
   {code:"uefa.champions", naam:"Champions"},
   {code:"uefa.europa", naam:"Europa"},
   {code:"uefa.europa.conf", naam:"Conference"},
+  {code:"int", codes:["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"], naam:"Interlands"},
 ];
+// Elke bron die apart wordt opgehaald; "Interlands" bundelt er vijf.
+const codesVan = c => c.codes || [c.code];
+const compVan = code => COMPETITIES.find(c => c.code === code);
+const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const PERIODES = [
   {id:"vorige", naam:"Afgelopen week"},
@@ -152,31 +157,31 @@ async function haalDag(code, dag){
 }
 
 // Vandaag: elke 30 seconden. Geeft ook de speelkalender van de competitie terug.
-async function haalVandaag(comp, goals){
+async function haalVandaag(b, goals){
   try {
-    const j = await haalDag(comp.code, plus(0));
-    fout[comp.code] = false;
+    const j = await haalDag(b.code, plus(0));
+    fout[b.code] = false;
     const van = plus(-7), tot = plus(7);
-    kalender[comp.code] = [...new Set((j.leagues?.[0]?.calendar || []).map(x => String(x).slice(0,10).replace(/-/g,"")))].filter(d => d >= van && d <= tot && d !== plus(0));
-    for (const d of dagen[comp.code][plus(0)]){
+    kalender[b.code] = [...new Set((j.leagues?.[0]?.calendar || []).map(x => String(x).slice(0,10).replace(/-/g,"")))].filter(d => d >= van && d <= tot && d !== plus(0));
+    for (const d of dagen[b.code][plus(0)]){
       const s = d.thuis.score + "-" + d.uit.score;
-      if (!eersteKeer && d.soort === "live" && vorige[d.id] !== undefined && vorige[d.id] !== s){ d.goal = true; goals.push({comp, d}); }
+      if (!eersteKeer && d.soort === "live" && vorige[d.id] !== undefined && vorige[d.id] !== s){ d.goal = true; goals.push({comp: b.comp, d}); }
       vorige[d.id] = s;
     }
-  } catch (e) { if (!dagen[comp.code]) fout[comp.code] = true; }
+  } catch (e) { if (!dagen[b.code]) fout[b.code] = true; }
 }
 
 // De andere speeldagen van afgelopen en komende week: af en toe.
 async function haalWeek(){
-  for (const comp of COMPETITIES){
-    await Promise.all((kalender[comp.code] || []).map(d => haalDag(comp.code, d).catch(() => {})));
+  for (const b of BRONNEN){
+    await Promise.all((kalender[b.code] || []).map(d => haalDag(b.code, d).catch(() => {})));
     teken();
   }
 }
 
 async function ververs(){
   const goals = [];
-  await Promise.all(COMPETITIES.map(c => haalVandaag(c, goals)));
+  await Promise.all(BRONNEN.map(b => haalVandaag(b, goals)));
   if (goals.length){
     if (actief !== LIVE){ actief = COMPETITIES.indexOf(goals[0].comp); periode = "vandaag"; }
     toonFlits(goals.map(x => `GOAL  ${x.d.thuis.naam} ${x.d.thuis.score} - ${x.d.uit.score} ${x.d.uit.naam}`).join("   •   "));
@@ -186,7 +191,7 @@ async function ververs(){
     teken();
     await haalWeek();
     // Wordt er vandaag nergens gespeeld, begin dan met het programma van komende week.
-    if (!lees("periode") && !COMPETITIES.some(c => duelsVan(c.code, "vandaag").length)) periode = "komende";
+    if (!lees("periode") && !BRONNEN.some(b => duelsVan(b.code, "vandaag").length)) periode = "komende";
   }
   teken();
 }
@@ -264,11 +269,12 @@ function teken(){
     return;
   }
 
-  const code = COMPETITIES[actief].code, duels = duelsVan(code, periode);
+  const comp = COMPETITIES[actief], code = comp.code, duels = duelsVan(code, periode);
   lijst.className = duels.length > 10 || periode !== "vandaag" ? "compact" : "";
   if (!duels.length){
-    leeg(!dagen[code] && !fout[code] ? "Standen laden…"
-      : fout[code] ? "Standen ophalen lukt niet. Controleer de internetverbinding; er wordt opnieuw geprobeerd."
+    leeg(!codesVan(comp).some(k => dagen[k]) && !codesVan(comp).some(k => fout[k]) ? "Standen laden…"
+      : codesVan(comp).every(k => fout[k] && !dagen[k]) ? "Standen ophalen lukt niet. Controleer de internetverbinding; er wordt opnieuw geprobeerd."
+      : false ? ""
       : periode === "vandaag" ? "Vandaag geen wedstrijden in deze competitie."
       : periode === "vorige" ? "Geen wedstrijden in de afgelopen week." : "Geen wedstrijden in de komende week.");
     return;
@@ -284,7 +290,10 @@ function teken(){
 }
 
 function volgende(){
-  if (!wisselen || actief === LIVE || !$("flits").hidden) return;
+  if (!wisselen || actief < 0 || !$("flits").hidden) return;
+  const groep = GROEPEN.find(x => x.codes.includes(COMPETITIES[actief].code));
+  // Wissel binnen de gekozen groep (Nederland, Europa of Interlands).
+  const binnen = i => groep.codes.includes(COMPETITIES[i].code);
   // Wissel tussen competities waar nu gespeeld wordt; anders tussen competities met wedstrijden in de gekozen periode.
   const idx = COMPETITIES.map((c,i) => i);
   let kandidaten = periode === "vandaag" ? idx.filter(i => aantalLive(COMPETITIES[i].code)) : [];
