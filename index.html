@@ -33,7 +33,9 @@ header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
 .wissel{justify-self:end;font:600 17px var(--font);color:var(--zacht);background:none;border:0;cursor:pointer;text-transform:uppercase;letter-spacing:.03em}
 .wissel[aria-pressed="true"]{color:var(--live)}
 .hoek{justify-self:end;display:flex;align-items:center;gap:12px}
-#castknop{width:34px;height:34px;cursor:pointer;--connected-color:var(--live);--disconnected-color:var(--tekst)}
+#castknop{background:none;border:0;padding:4px;display:flex;cursor:pointer;color:var(--tekst);border-radius:6px}
+#castknop.aan{color:var(--live)}
+#castknop:focus-visible{outline:3px solid var(--live)}
 #klok{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
 .dag{grid-column:1/-1;margin:4px 0 0;font-size:17px;font-weight:600;color:var(--zacht);text-transform:uppercase;letter-spacing:.06em}
 main.compact{grid-auto-rows:auto;align-content:start;overflow-y:auto;gap:5px 8px}
@@ -64,14 +66,14 @@ main.compact .club small{display:none}
 .leeg{grid-column:1/-1;align-self:center;text-align:center;font-size:28px;color:var(--zacht)}
 #flits{position:fixed;left:16px;right:16px;bottom:12px;background:var(--live);color:var(--veld);font-size:30px;font-weight:700;padding:8px 16px;border-radius:6px;text-align:center}
 [hidden]{display:none!important}
-@media (max-width:640px){main{grid-template-columns:1fr}body{overflow:auto}.duel{min-height:64px}}
+@media (max-width:640px){main{grid-template-columns:1fr}body{overflow:auto;padding:8px 16px}.duel{min-height:64px}.rij{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.tab,.tab.per{font-size:16px;white-space:nowrap;flex:none}#klok{font-size:22px}.club small{-webkit-line-clamp:4;font-size:14px}}
 @media (prefers-reduced-motion:reduce){.duel.goal{animation:none;outline:3px solid var(--live)}}
 </style>
 </head>
 <body>
 <header>
   <div id="tabs" class="rij"></div>
-  <div class="hoek"><google-cast-launcher id="castknop" title="Casten naar je Hub"></google-cast-launcher><span id="klok"></span></div>
+  <div class="hoek"><button id="castknop" aria-label="Casten naar je Hub" title="Casten naar je Hub"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path fill="currentColor" d="M1 18v3h3a3 3 0 0 0-3-3zm0-4v2a5 5 0 0 1 5 5h2a7 7 0 0 0-7-7zm0-4v2a9 9 0 0 1 9 9h2A11 11 0 0 0 1 10zm20-7H3a2 2 0 0 0-2 2v3h2V5h18v14h-7v2h7a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/></svg></button><span id="klok"></span></div>
   <div id="periodes" class="rij"></div>
   <button class="wissel" id="wissel" aria-pressed="true" title="Automatisch wisselen tussen competities">Wisselen aan</button>
 </header>
@@ -295,9 +297,20 @@ if (/CrKey/.test(navigator.userAgent)) {
   document.head.append(sc);
 } else {
   // Op telefoon of laptop: het cast-icoon rechtsboven start het scorebord op de Hub.
+  const castknop = document.getElementById("castknop");
+  let castCtx = null;
   window.__onGCastApiAvailable = ok => {
-    if (!ok) { document.getElementById("castknop").hidden = true; return; }
-    cast.framework.CastContext.getInstance().setOptions({receiverApplicationId: CAST_APP_ID, autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED});
+    if (!ok) return;
+    castCtx = cast.framework.CastContext.getInstance();
+    castCtx.setOptions({receiverApplicationId: CAST_APP_ID, autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED});
+    castCtx.addEventListener(cast.framework.CastContextEventType.SESSION_STATE_CHANGED, () => castknop.classList.toggle("aan", !!castCtx.getCurrentSession()));
+  };
+  castknop.onclick = () => {
+    if (!castCtx) { toonFlits("Casten werkt alleen in Chrome (Android of laptop)."); return; }
+    if (castCtx.getCurrentSession()) { castCtx.endCurrentSession(true); toonFlits("Casten gestopt."); return; }
+    castCtx.requestSession().catch(e => {
+      if (e !== "cancel") toonFlits("Casten is niet gelukt (" + e + "). Staat de Hub aan en zit je op dezelfde wifi?");
+    });
   };
   const sc = document.createElement("script");
   sc.src = "https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1";
