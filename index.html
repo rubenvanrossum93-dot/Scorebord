@@ -212,18 +212,18 @@ function knop(tekst, aan, klik, klasse){
 
 function teken(){
   const tabs = $("tabs"); tabs.textContent = "";
-  const lb = knop("Live", actief === LIVE, () => { actief = LIVE; onthoud("competitie", "live"); teken(); }, "tab");
+  const lb = knop("Live", actief === LIVE, () => { actief = LIVE; onthoud("competitie", "live"); teken(); window.stuurKeuze?.(); }, "tab");
   const totaal = COMPETITIES.reduce((n, c) => n + aantalLive(c.code), 0);
   if (totaal){ const sp = document.createElement("span"); sp.className = "n"; sp.textContent = "● " + totaal; lb.append(sp); }
   tabs.append(lb);
   COMPETITIES.forEach((c,i) => {
-    const b = knop(c.naam, i === actief, () => { actief = i; onthoud("competitie", c.code); teken(); }, "tab");
+    const b = knop(c.naam, i === actief, () => { actief = i; onthoud("competitie", c.code); teken(); window.stuurKeuze?.(); }, "tab");
     const n = aantalLive(c.code);
     if (n){ const s = document.createElement("span"); s.className = "n"; s.textContent = "● " + n; b.append(s); }
     tabs.append(b);
   });
   const per = $("periodes"); per.textContent = "";
-  PERIODES.forEach(p => per.append(knop(p.naam, p.id === periode, () => { periode = p.id; onthoud("periode", p.id); teken(); }, "tab per")));
+  PERIODES.forEach(p => per.append(knop(p.naam, p.id === periode, () => { periode = p.id; onthoud("periode", p.id); teken(); window.stuurKeuze?.(); }, "tab per")));
 
   const lijst = $("lijst");
   lijst.textContent = "";
@@ -298,7 +298,22 @@ $("wissel").onclick = () => {
   wisselen = !wisselen; onthoud("wisselen", wisselen ? "1" : "0");
   $("wissel").setAttribute("aria-pressed", wisselen);
   $("wissel").textContent = wisselen ? "Wisselen aan" : "Wisselen uit";
+  window.stuurKeuze?.();
 };
+// De keuze van je telefoon overnemen op de Hub (wordt aangeroepen als er een bericht van de telefoon binnenkomt).
+function neemKeuzeOver(k){
+  if (!k) return;
+  if (k.competitie === "live") actief = LIVE;
+  else if (COMPETITIES.some(c => c.code === k.competitie)) actief = COMPETITIES.findIndex(c => c.code === k.competitie);
+  if (PERIODES.some(p => p.id === k.periode)) periode = k.periode;
+  if (typeof k.wisselen === "boolean" && k.wisselen !== wisselen){
+    wisselen = k.wisselen;
+    $("wissel").setAttribute("aria-pressed", wisselen);
+    $("wissel").textContent = wisselen ? "Wisselen aan" : "Wisselen uit";
+  }
+  $("lijst").scrollTop = 0;
+  teken();
+}
 // Onthoud de laatste keuzes op dit apparaat.
 if (PERIODES.some(p => p.id === lees("periode"))) periode = lees("periode");
 if (COMPETITIES.some(c => c.code === lees("competitie"))) actief = COMPETITIES.findIndex(c => c.code === lees("competitie"));
@@ -316,6 +331,7 @@ wakker(); document.addEventListener("visibilitychange", () => document.visibilit
 </script>
 <script>
 const CAST_APP_ID = "28EAC2B6";
+const CAST_KANAAL = "urn:x-cast:nl.scorecasting.keuze";
 if (/CrKey/.test(navigator.userAgent)) {
   // De pagina draait op een Cast-apparaat (zoals de Nest Hub): meld hem aan als cast-app en houd hem in beeld.
   document.getElementById("castknop").hidden = true;
@@ -327,7 +343,11 @@ if (/CrKey/.test(navigator.userAgent)) {
   }, 8000);
   const sc = document.createElement("script");
   sc.src = "https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js";
-  sc.onload = () => cast.framework.CastReceiverContext.getInstance().start({disableIdleTimeout: true});
+  sc.onload = () => {
+    const ctx = cast.framework.CastReceiverContext.getInstance();
+    ctx.addCustomMessageListener(CAST_KANAAL, e => neemKeuzeOver(typeof e.data === "string" ? JSON.parse(e.data) : e.data));
+    ctx.start({disableIdleTimeout: true, customNamespaces: {[CAST_KANAAL]: cast.framework.system.MessageType.JSON}});
+  };
   document.head.append(sc);
 } else {
   // Op telefoon of laptop: het cast-icoon rechtsboven start het scorebord op de Hub.
@@ -337,7 +357,16 @@ if (/CrKey/.test(navigator.userAgent)) {
     if (!ok) return;
     castCtx = cast.framework.CastContext.getInstance();
     castCtx.setOptions({receiverApplicationId: CAST_APP_ID, autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED});
-    castCtx.addEventListener(cast.framework.CastContextEventType.SESSION_STATE_CHANGED, () => castknop.classList.toggle("aan", !!castCtx.getCurrentSession()));
+    castCtx.addEventListener(cast.framework.CastContextEventType.SESSION_STATE_CHANGED, () => {
+      castknop.classList.toggle("aan", !!castCtx.getCurrentSession());
+      setTimeout(window.stuurKeuze, 1500);   // geef de Hub even tijd om de pagina te laden
+    });
+  };
+  // Stuur de gekozen competitie, periode en wisselstand naar de Hub.
+  window.stuurKeuze = () => {
+    const sessie = castCtx && castCtx.getCurrentSession();
+    if (!sessie) return;
+    sessie.sendMessage(CAST_KANAAL, {competitie: actief === LIVE ? "live" : COMPETITIES[actief].code, periode, wisselen}).catch(() => {});
   };
   castknop.onclick = () => {
     if (!castCtx) { toonFlits("Casten werkt alleen in Chrome (Android of laptop)."); return; }
