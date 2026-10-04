@@ -45,11 +45,11 @@ header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
 .titel h1{margin:0;font-size:26px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
 .titel .n{color:var(--live);margin-left:10px;font-size:20px}
 .standnoot{font-size:14px;color:var(--live);margin-bottom:2px}
-main{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,104px);align-content:start;gap:8px}
+main{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;display:grid;grid-template-columns:minmax(0,1fr);width:100%;max-width:900px;margin:0 auto;grid-auto-rows:max-content;align-content:start;gap:8px}
 main::-webkit-scrollbar{display:none}
 .kop{grid-column:1/-1;margin:4px 0 0;font-size:17px;font-weight:600;color:var(--zacht);text-transform:uppercase;letter-spacing:.06em}
 .kop:first-child{margin-top:0}
-.duel{background:var(--vlak);border-radius:6px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:4px 12px;position:relative;max-height:110px}
+.duel{background:var(--vlak);border-radius:6px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:8px 14px;position:relative;min-height:84px}
 .duel.live::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:4px;background:var(--live);border-radius:2px}
 .duel.goal{animation:goal 1s ease-in-out 8}
 @keyframes goal{50%{background:var(--live);color:var(--veld)}}
@@ -66,9 +66,9 @@ main::-webkit-scrollbar{display:none}
 .status{font-size:17px;color:var(--zacht);font-weight:600;letter-spacing:.03em}
 .duel.live .status{color:var(--live)}
 .duel.voor .stand{font-size:clamp(22px,3.2vw,34px);color:var(--zacht)}
-main.compact{grid-auto-rows:auto;gap:5px 8px}
-main.compact .duel{padding:3px 10px;min-height:40px;max-height:none}
-main.compact .club{font-size:21px}
+main.compact{gap:5px 8px}
+main.compact .duel{padding:5px 12px;min-height:48px;max-height:none}
+main.compact .club{font-size:24px}
 main.compact .club img{width:24px;height:24px}
 main.compact .midden{display:flex;align-items:baseline;justify-content:center;gap:8px}
 main.compact .stand,main.compact .duel.voor .stand{font-size:25px}
@@ -120,7 +120,7 @@ const codesVan = c => c.codes || [c.code];
 const compVan = code => COMPETITIES.find(c => c.code === code);
 const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
 const KEUZEGROEPEN = [["Nederland",["ned.1","ned.2"]],["Buitenland",["eng.1","esp.1","ger.1","ita.1","fra.1","bel.1"]],["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v20";
+const VERSIE = "v21";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const ALLES = -2;         // het tabblad "Alles": alle wedstrijden van vandaag
 const PERIODES = [
