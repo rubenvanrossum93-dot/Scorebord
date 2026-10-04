@@ -45,13 +45,15 @@ main.compact .club img{width:24px;height:24px}
 main.compact .midden{display:flex;align-items:baseline;justify-content:center;gap:8px}
 main.compact .stand,main.compact .duel.voor .stand{font-size:25px}
 main.compact .status{font-size:15px}
-main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,104px);align-content:start;gap:8px}
+main{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,104px);align-content:start;gap:8px}
 .duel{background:var(--vlak);border-radius:6px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:4px 12px;position:relative;max-height:110px}
 .club{display:flex;align-items:center;gap:8px;min-width:0;font-size:clamp(18px,2.6vw,28px);font-weight:600}
 .naam{min-width:0;display:flex;flex-direction:column;line-height:1.1}
 .club span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .club small{font-size:16px;font-weight:500;color:var(--zacht);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 main.compact .club small{display:none}
+main.compact .duel.live{min-height:52px}
+main.compact .duel.live .club small{display:-webkit-box;-webkit-line-clamp:1;font-size:14px}
 .duel.goal .club small{color:inherit}
 .club.uit{flex-direction:row-reverse;text-align:right}
 .club img{width:clamp(24px,3.4vw,38px);height:clamp(24px,3.4vw,38px);object-fit:contain;flex:none}
@@ -90,7 +92,11 @@ const COMPETITIES = [
   {code:"ita.1", naam:"Italië"},
   {code:"fra.1", naam:"Frankrijk"},
   {code:"bel.1", naam:"België"},
+  {code:"uefa.champions", naam:"Champions"},
+  {code:"uefa.europa", naam:"Europa"},
+  {code:"uefa.europa.conf", naam:"Conference"},
 ];
+const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const PERIODES = [
   {id:"vorige", naam:"Afgelopen week"},
   {id:"vandaag", naam:"Vandaag"},
@@ -105,7 +111,7 @@ const dagen = {};         // code -> {jjjjmmdd: [duels]}
 const kalender = {};      // code -> [jjjjmmdd] binnen een week rond vandaag
 const fout = {};          // code -> true als ophalen niet lukt
 const vorige = {};        // wedstrijd-id -> "thuis-uit"
-let actief = 0, periode = "vandaag", wisselen = true, eersteKeer = true, flitsTimer;
+let actief = LIVE, periode = "vandaag", wisselen = true, eersteKeer = true, flitsTimer;
 
 const $ = id => document.getElementById(id);
 const ymd = d => d.getFullYear() + String(d.getMonth()+1).padStart(2,"0") + String(d.getDate()).padStart(2,"0");
@@ -172,7 +178,7 @@ async function ververs(){
   const goals = [];
   await Promise.all(COMPETITIES.map(c => haalVandaag(c, goals)));
   if (goals.length){
-    actief = COMPETITIES.indexOf(goals[0].comp); periode = "vandaag";
+    if (actief !== LIVE){ actief = COMPETITIES.indexOf(goals[0].comp); periode = "vandaag"; }
     toonFlits(goals.map(x => `GOAL  ${x.d.thuis.naam} ${x.d.thuis.score} - ${x.d.uit.score} ${x.d.uit.naam}`).join("   •   "));
   }
   if (eersteKeer){
@@ -206,6 +212,10 @@ function knop(tekst, aan, klik, klasse){
 
 function teken(){
   const tabs = $("tabs"); tabs.textContent = "";
+  const lb = knop("Live", actief === LIVE, () => { actief = LIVE; onthoud("competitie", "live"); teken(); }, "tab");
+  const totaal = COMPETITIES.reduce((n, c) => n + aantalLive(c.code), 0);
+  if (totaal){ const sp = document.createElement("span"); sp.className = "n"; sp.textContent = "● " + totaal; lb.append(sp); }
+  tabs.append(lb);
   COMPETITIES.forEach((c,i) => {
     const b = knop(c.naam, i === actief, () => { actief = i; onthoud("competitie", c.code); teken(); }, "tab");
     const n = aantalLive(c.code);
@@ -215,32 +225,19 @@ function teken(){
   const per = $("periodes"); per.textContent = "";
   PERIODES.forEach(p => per.append(knop(p.naam, p.id === periode, () => { periode = p.id; onthoud("periode", p.id); teken(); }, "tab per")));
 
-  const code = COMPETITIES[actief].code, duels = duelsVan(code, periode), lijst = $("lijst");
+  const lijst = $("lijst");
   lijst.textContent = "";
-  lijst.className = duels.length > 10 || periode !== "vandaag" ? "compact" : "";
-  if (!duels.length){
-    const p = document.createElement("p"); p.className = "leeg";
-    p.textContent = !dagen[code] && !fout[code] ? "Standen laden…"
-      : fout[code] ? "Standen ophalen lukt niet. Controleer de internetverbinding; er wordt opnieuw geprobeerd."
-      : periode === "vandaag" ? "Vandaag geen wedstrijden in deze competitie."
-      : periode === "vorige" ? "Geen wedstrijden in de afgelopen week." : "Geen wedstrijden in de komende week.";
-    lijst.append(p); return;
-  }
-  let dag = "";
-  for (const d of duels){
-    if (periode !== "vandaag" && d.dag !== dag){
-      dag = d.dag;
-      const h = document.createElement("h2"); h.className = "dag";
-      h.textContent = d.start.toLocaleDateString("nl-NL", {weekday:"long", day:"numeric", month:"long"});
-      lijst.append(h);
-    }
+  per.hidden = actief === LIVE;
+  const leeg = t => { const p = document.createElement("p"); p.className = "leeg"; p.textContent = t; lijst.append(p); };
+  const kop = t => { const h = document.createElement("h2"); h.className = "dag"; h.textContent = t; lijst.append(h); };
+  const regel = (d, metStatus) => {
     const el = document.createElement("div");
     el.className = "duel " + d.soort + (d.goal ? " goal" : "");
     const club = (c, kant) => {
       const w = document.createElement("div"); w.className = "club " + kant;
       if (c.logo){ const im = document.createElement("img"); im.src = c.logo; im.alt = ""; w.append(im); }
       const t = document.createElement("div"); t.className = "naam";
-      const s = document.createElement("span"); s.textContent = c.naam; t.append(s);
+      const sn = document.createElement("span"); sn.textContent = c.naam; t.append(sn);
       if (c.makers && d.soort !== "voor"){ const k = document.createElement("small"); k.textContent = c.makers; t.append(k); }
       w.append(t); return w;
     };
@@ -248,15 +245,46 @@ function teken(){
     const st = document.createElement("div"); st.className = "stand";
     st.textContent = d.soort === "voor" ? d.start.toLocaleTimeString("nl-NL", {hour:"2-digit", minute:"2-digit"}) : `${d.thuis.score} - ${d.uit.score}`;
     m.append(st);
-    if (d.status && !(d.soort === "na" && d.status === "Afgelopen" && periode !== "vandaag")){ const s = document.createElement("div"); s.className = "status"; s.textContent = d.status; m.append(s); }
+    if (d.status && (metStatus || d.soort !== "na")){ const x = document.createElement("div"); x.className = "status"; x.textContent = d.status; m.append(x); }
     el.append(club(d.thuis, "thuis"), m, club(d.uit, "uit"));
     lijst.append(el);
     d.goal = false;
+  };
+
+  if (actief === LIVE){
+    // Alle wedstrijden die nu bezig zijn; wordt er nergens gespeeld, dan alles van vandaag.
+    const perComp = COMPETITIES.map(c => ({c, duels: duelsVan(c.code, "vandaag")}));
+    const isLive = perComp.some(x => x.duels.some(d => d.soort === "live"));
+    const groepen = perComp.map(x => ({c: x.c, duels: isLive ? x.duels.filter(d => d.soort === "live") : x.duels})).filter(x => x.duels.length);
+    const n = groepen.reduce((t, x) => t + x.duels.length, 0);
+    lijst.className = n > 6 ? "compact" : "";
+    if (!n){ leeg(COMPETITIES.some(c => !dagen[c.code] && !fout[c.code]) ? "Standen laden…" : "Vandaag wordt er nergens gespeeld. Kies een competitie voor het programma."); return; }
+    if (!isLive) kop("Er wordt nu niet gespeeld. Alle wedstrijden van vandaag:");
+    for (const g of groepen){ kop(g.c.naam); g.duels.forEach(d => regel(d, true)); }
+    return;
+  }
+
+  const code = COMPETITIES[actief].code, duels = duelsVan(code, periode);
+  lijst.className = duels.length > 10 || periode !== "vandaag" ? "compact" : "";
+  if (!duels.length){
+    leeg(!dagen[code] && !fout[code] ? "Standen laden…"
+      : fout[code] ? "Standen ophalen lukt niet. Controleer de internetverbinding; er wordt opnieuw geprobeerd."
+      : periode === "vandaag" ? "Vandaag geen wedstrijden in deze competitie."
+      : periode === "vorige" ? "Geen wedstrijden in de afgelopen week." : "Geen wedstrijden in de komende week.");
+    return;
+  }
+  let dag = "";
+  for (const d of duels){
+    if (periode !== "vandaag" && d.dag !== dag){
+      dag = d.dag;
+      kop(d.start.toLocaleDateString("nl-NL", {weekday:"long", day:"numeric", month:"long"}));
+    }
+    regel(d, periode === "vandaag");
   }
 }
 
 function volgende(){
-  if (!wisselen || !$("flits").hidden) return;
+  if (!wisselen || actief === LIVE || !$("flits").hidden) return;
   // Wissel tussen competities waar nu gespeeld wordt; anders tussen competities met wedstrijden in de gekozen periode.
   const idx = COMPETITIES.map((c,i) => i);
   let kandidaten = periode === "vandaag" ? idx.filter(i => aantalLive(COMPETITIES[i].code)) : [];
@@ -291,6 +319,12 @@ const CAST_APP_ID = "28EAC2B6";
 if (/CrKey/.test(navigator.userAgent)) {
   // De pagina draait op een Cast-apparaat (zoals de Nest Hub): meld hem aan als cast-app en houd hem in beeld.
   document.getElementById("castknop").hidden = true;
+  // Op de Hub kun je niet scrollen: blader zelf door lange lijsten.
+  setInterval(() => {
+    const m = document.getElementById("lijst");
+    if (m.scrollHeight <= m.clientHeight + 4) return;
+    m.scrollTop = m.scrollTop + m.clientHeight >= m.scrollHeight - 4 ? 0 : m.scrollTop + m.clientHeight * 0.85;
+  }, 8000);
   const sc = document.createElement("script");
   sc.src = "https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js";
   sc.onload = () => cast.framework.CastReceiverContext.getInstance().start({disableIdleTimeout: true});
