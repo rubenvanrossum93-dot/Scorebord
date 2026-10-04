@@ -95,7 +95,12 @@ const COMPETITIES = [
   {code:"uefa.champions", naam:"Champions"},
   {code:"uefa.europa", naam:"Europa"},
   {code:"uefa.europa.conf", naam:"Conference"},
-  {code:"int", codes:["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"], naam:"Interlands"},
+  {code:"fifa.world", naam:"WK"},
+  {code:"fifa.worldq.uefa", naam:"WK-kwal."},
+  {code:"uefa.euro", naam:"EK"},
+  {code:"uefa.euroq", naam:"EK-kwal."},
+  {code:"uefa.nations", naam:"Nations League"},
+  {code:"int", codes:["fifa.world","fifa.worldq.uefa","uefa.euro","uefa.euroq","uefa.nations"], naam:"Interlands"},
 ];
 // Elke bron die apart wordt opgehaald; "Interlands" bundelt er vijf.
 const codesVan = c => c.codes || [c.code];
