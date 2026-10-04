@@ -27,6 +27,10 @@ header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
 .tab{font:600 17px var(--font);letter-spacing:.03em;text-transform:uppercase;color:var(--zacht);background:none;border:2px solid var(--lijn);border-radius:6px;padding:2px 8px;cursor:pointer}
 .tab.per{font-size:16px;border-radius:999px;padding:2px 12px}
 .tab[aria-pressed="true"]{color:var(--veld);background:var(--tekst);border-color:var(--tekst)}
+.kies{font-family:var(--font);max-width:11.5em;text-overflow:ellipsis;appearance:auto;cursor:pointer}
+.kies.aan{color:var(--veld);background:var(--tekst);border-color:var(--tekst)}
+.kies option,.kies optgroup{color:#111;background:#fff;text-transform:none}
+#versie{position:fixed;right:8px;bottom:5px;font-size:11px;color:var(--zacht);opacity:.6;pointer-events:none}
 .tab .n{color:var(--live);margin-left:6px}
 .tab[aria-pressed="true"] .n{color:#8a5a00}
 .tab:focus-visible,.wissel:focus-visible{outline:3px solid var(--live);outline-offset:2px}
@@ -77,7 +81,7 @@ main.compact .duel.live .club small{display:-webkit-box;-webkit-line-clamp:1;fon
 [hidden]{display:none!important}
 .hub header,.hub .subbar{display:none}
 .hub .titel{display:flex}
-@media (max-width:640px){main{grid-template-columns:1fr}body{overflow:auto;padding:8px 16px}.duel{min-height:64px}.rij{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rij::-webkit-scrollbar{display:none}.tab,.tab.per{font-size:16px;white-space:nowrap;flex:none}#klok{font-size:22px}.club small{-webkit-line-clamp:4;font-size:14px}.makers{font-size:12.5px;padding-bottom:4px}.makers.thuis{text-align:left;padding-left:2px}.standrij{grid-template-columns:24px 24px minmax(0,1fr) 28px 34px 34px 34px 46px 40px;column-gap:6px;font-size:17px;min-height:32px}.standrij img,.standrij>span:nth-child(2){width:22px;height:22px}.standrij .wgv{display:none}.kop{font-size:13px}.tab{font-size:14px;padding:3px 8px}main.compact .duel{min-height:36px}.titel h1{font-size:20px}.titel .n{font-size:16px}}
+@media (max-width:640px){main{grid-template-columns:1fr}body{overflow:auto;padding:8px 16px}.duel{min-height:64px}.rij{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rij::-webkit-scrollbar{display:none}.tab,.tab.per{font-size:16px;white-space:nowrap;flex:none}#klok{display:none}header{display:flex;flex-wrap:wrap}#tabs{flex:1 1 calc(100% - 60px);min-width:0}#periodes{flex:1 1 calc(100% - 160px);min-width:0}.kies{max-width:13em}.club small{-webkit-line-clamp:4;font-size:14px}.makers{font-size:12.5px;padding-bottom:4px}.makers.thuis{text-align:left;padding-left:2px}.standrij{grid-template-columns:24px 24px minmax(0,1fr) 28px 34px 34px 34px 46px 40px;column-gap:6px;font-size:17px;min-height:32px}.standrij img,.standrij>span:nth-child(2){width:22px;height:22px}.standrij .wgv{display:none}.kop{font-size:13px}.tab{font-size:14px;padding:3px 8px}main.compact .duel{min-height:36px}.titel h1{font-size:20px}.titel .n{font-size:16px}}
 @media (prefers-reduced-motion:reduce){.duel.goal{animation:none;outline:3px solid var(--live)}}
 </style>
 </head>
@@ -89,6 +93,7 @@ main.compact .duel.live .club small{display:-webkit-box;-webkit-line-clamp:1;fon
   <button class="wissel" id="wissel" aria-pressed="true" title="Automatisch wisselen tussen competities">Wisselen aan</button>
 </header>
 <div id="titel" class="titel" hidden><h1 id="titelnaam"></h1><span class="klok" id="klok2"></span></div>
+<div id="versie"></div>
 <main id="lijst"><p class="leeg">Standen laden…</p></main>
 <div id="flits" hidden></div>
 <script>
@@ -105,12 +110,17 @@ const COMPETITIES = [
   {code:"uefa.champions", naam:"Champions"},
   {code:"uefa.europa", naam:"Europa"},
   {code:"uefa.europa.conf", naam:"Conference"},
-  {code:"int", codes:["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"], naam:"Interlands"},
+  {code:"uefa.nations", naam:"Nations League"},
+  {code:"fifa.worldq.uefa", naam:"WK-kwalificatie"},
+  {code:"uefa.euroq", naam:"EK-kwalificatie"},
+  {code:"fifa.world", naam:"WK"},
+  {code:"uefa.euro", naam:"EK"},
 ];
-// Elke bron die apart wordt opgehaald; "Interlands" bundelt er vijf.
 const codesVan = c => c.codes || [c.code];
 const compVan = code => COMPETITIES.find(c => c.code === code);
 const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
+const KEUZEGROEPEN = [["Nederland",["ned.1","ned.2"]],["Buitenland",["eng.1","esp.1","ger.1","ita.1","fra.1","bel.1"]],["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
+const VERSIE = "v20";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const ALLES = -2;         // het tabblad "Alles": alle wedstrijden van vandaag
 const PERIODES = [
@@ -282,11 +292,29 @@ function regel(d, metStatus, doel){
 }
 
 function teken(){
-  const tabs = $("tabs"); tabs.textContent = "";
-  const totaal = COMPETITIES.reduce((n, c) => n + aantalLive(c.code), 0);
-  tabs.append(tabKnop("Live", LIVE, totaal));
-  tabs.append(tabKnop("Alles", ALLES, 0));
-  COMPETITIES.forEach((c,i) => tabs.append(tabKnop(c.naam, i, aantalLive(c.code))));
+  const tabs = $("tabs");
+  // Niet opnieuw opbouwen terwijl de keuzelijst openstaat.
+  if (document.activeElement?.id !== "kies"){
+    tabs.textContent = "";
+    const totaal = COMPETITIES.reduce((n, c) => n + aantalLive(c.code), 0);
+    tabs.append(tabKnop("Live", LIVE, totaal));
+    tabs.append(tabKnop("Alles", ALLES, 0));
+    const kies = document.createElement("select");
+    kies.id = "kies"; kies.className = "tab kies" + (actief >= 0 ? " aan" : ""); kies.setAttribute("aria-label", "Competitie kiezen");
+    const o0 = document.createElement("option"); o0.value = ""; o0.textContent = "Competitie"; o0.hidden = true; kies.append(o0);
+    for (const [gnaam, codes] of KEUZEGROEPEN){
+      const og = document.createElement("optgroup"); og.label = gnaam;
+      for (const code of codes){
+        const i = COMPETITIES.findIndex(c => c.code === code); if (i < 0) continue;
+        const o = document.createElement("option"); o.value = i; const n = aantalLive(code);
+        o.textContent = COMPETITIES[i].naam + (n ? "  ● " + n : ""); og.append(o);
+      }
+      kies.append(og);
+    }
+    kies.value = actief >= 0 ? String(actief) : "";
+    kies.onchange = () => { if (kies.value === "") return; actief = Number(kies.value); onthoud("competitie", COMPETITIES[actief].code); kies.blur(); teken(); window.stuurKeuze?.(); };
+    tabs.append(kies);
+  }
   const per = $("periodes"); per.textContent = "";
   PERIODES.forEach(p => per.append(knop(p.naam, p.id === periode, () => { periode = p.id; onthoud("periode", p.id); teken(); window.stuurKeuze?.(); }, "tab per")));
 
@@ -310,7 +338,7 @@ function teken(){
     const groepen = perComp.map(x => ({c: x.c, duels: (actief === LIVE && isLive) ? x.duels.filter(d => d.soort === "live") : x.duels})).filter(x => x.duels.length);
     const n = groepen.reduce((t, x) => t + x.duels.length, 0);
     lijst.className = n > 6 ? "compact" : "";
-    if (!n){ leeg(COMPETITIES.some(c => !dagen[c.code] && !fout[c.code]) ? "Standen laden…" : actief === LIVE ? "Vandaag wordt er nergens gespeeld. Kies een competitie voor het programma." : "Vandaag geen wedstrijden."); return; }
+    if (!n){ leeg(BRONNEN.some(b => !dagen[b.code] && !fout[b.code]) ? "Standen laden…" : actief === LIVE ? "Vandaag wordt er nergens gespeeld. Kies een competitie voor het programma." : "Vandaag geen wedstrijden."); return; }
     if (actief === LIVE && !isLive){ const sn = document.createElement("div"); sn.className = "standnoot"; sn.textContent = "● Er wordt nu niet gespeeld. Alle wedstrijden van vandaag:"; lijst.append(sn); }
     else if (actief === LIVE && cast){ const sn = document.createElement("div"); sn.className = "standnoot"; sn.textContent = "● Live stand, bijgewerkt met lopende wedstrijden"; lijst.append(sn); }
     for (const g of groepen){ kop(g.c.naam); g.duels.forEach(d => regel(d, true, lijst)); }
@@ -322,7 +350,7 @@ function teken(){
   const duels = duelsVan(code, periode);
   lijst.className = duels.length > 10 || periode !== "vandaag" ? "compact" : "";
   if (!duels.length){
-    leeg(!dagen[code] && !fout[code] ? "Standen laden…"
+    leeg(codesVan(COMPETITIES[actief]).some(k => !dagen[k] && !fout[k]) ? "Standen laden…"
       : fout[code] && !dagen[code] ? "Standen ophalen lukt niet. Controleer de internetverbinding; er wordt opnieuw geprobeerd."
       : periode === "vandaag" ? "Vandaag geen wedstrijden in deze competitie."
       : periode === "vorige" ? "Geen wedstrijden in de afgelopen week." : "Geen wedstrijden in de komende week.");
@@ -353,3 +381,108 @@ function tekenStand(code){
     lijst.append(el);
   }
 }
+
+function volgende(){
+  if (!wisselen || actief < 0 || !$("flits").hidden) return;
+  // Wissel tussen competities waar nu gespeeld wordt; anders tussen competities met wedstrijden in de gekozen periode.
+  const idx = COMPETITIES.map((c,i) => i);
+  let kandidaten = periode === "vandaag" ? idx.filter(i => aantalLive(COMPETITIES[i].code)) : [];
+  if (!kandidaten.length) kandidaten = idx.filter(i => duelsVan(COMPETITIES[i].code, periode).length);
+  if (!kandidaten.length) return;
+  actief = kandidaten.find(i => i > actief) ?? kandidaten[0];
+  teken();
+}
+
+$("wissel").onclick = () => {
+  wisselen = !wisselen; onthoud("wisselen", wisselen ? "1" : "0");
+  $("wissel").setAttribute("aria-pressed", wisselen);
+  $("wissel").textContent = wisselen ? "Wisselen aan" : "Wisselen uit";
+  window.stuurKeuze?.();
+};
+// De keuze van je telefoon overnemen op de Hub (wordt aangeroepen als er een bericht van de telefoon binnenkomt).
+function neemKeuzeOver(k){
+  if (!k) return;
+  if (k.competitie === "live") actief = LIVE;
+  else if (k.competitie === "alles") actief = ALLES;
+  else if (COMPETITIES.some(c => c.code === k.competitie)) actief = COMPETITIES.findIndex(c => c.code === k.competitie);
+  if (PERIODES.some(p => p.id === k.periode)) periode = k.periode;
+  if (typeof k.wisselen === "boolean" && k.wisselen !== wisselen){
+    wisselen = k.wisselen;
+    $("wissel").setAttribute("aria-pressed", wisselen);
+    $("wissel").textContent = wisselen ? "Wisselen aan" : "Wisselen uit";
+  }
+  $("lijst").scrollTop = 0;
+  teken();
+}
+// Onthoud de laatste keuzes op dit apparaat.
+if (PERIODES.some(p => p.id === lees("periode"))) periode = lees("periode");
+if (COMPETITIES.some(c => c.code === lees("competitie"))) actief = COMPETITIES.findIndex(c => c.code === lees("competitie"));
+if (lees("competitie") === "alles") actief = ALLES;
+if (actief < 0 && periode !== "vandaag") periode = "vandaag";
+if (lees("wisselen") === "0") $("wissel").click();
+
+$("versie").textContent = VERSIE;
+const tik = () => $("klok").textContent = new Date().toLocaleTimeString("nl-NL", {hour:"2-digit", minute:"2-digit"});
+tik(); setInterval(tik, 5000);
+teken(); ververs();
+setInterval(ververs, VERVERS_SEC * 1000);
+setInterval(haalWeek, WEEK_MIN * 60000);
+setInterval(volgende, WISSEL_SEC * 1000);
+// Houd het scherm wakker zolang de pagina open staat (als de browser dat toestaat).
+const wakker = () => navigator.wakeLock?.request("screen").catch(() => {});
+wakker(); document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && wakker());
+</script>
+<script>
+const CAST_APP_ID = "28EAC2B6";
+const CAST_KANAAL = "urn:x-cast:nl.scorecasting.keuze";
+if (/CrKey/.test(navigator.userAgent)) {
+  // De pagina draait op een Cast-apparaat (zoals de Nest Hub): meld hem aan als cast-app en houd hem in beeld.
+  document.getElementById("castknop").hidden = true;
+  document.body.classList.add("hub"); teken();
+  // Op de Hub kun je niet scrollen: blader zelf door lange lijsten.
+  setInterval(() => {
+    const m = document.getElementById("lijst");
+    if (m.scrollHeight <= m.clientHeight + 4) return;
+    m.scrollTop = m.scrollTop + m.clientHeight >= m.scrollHeight - 4 ? 0 : m.scrollTop + m.clientHeight * 0.85;
+  }, 8000);
+  const sc = document.createElement("script");
+  sc.src = "https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js";
+  sc.onload = () => {
+    const ctx = cast.framework.CastReceiverContext.getInstance();
+    ctx.addCustomMessageListener(CAST_KANAAL, e => neemKeuzeOver(typeof e.data === "string" ? JSON.parse(e.data) : e.data));
+    ctx.start({disableIdleTimeout: true, customNamespaces: {[CAST_KANAAL]: cast.framework.system.MessageType.JSON}});
+  };
+  document.head.append(sc);
+} else {
+  // Op telefoon of laptop: het cast-icoon rechtsboven start het scorebord op de Hub.
+  const castknop = document.getElementById("castknop");
+  let castCtx = null;
+  window.__onGCastApiAvailable = ok => {
+    if (!ok) return;
+    castCtx = cast.framework.CastContext.getInstance();
+    castCtx.setOptions({receiverApplicationId: CAST_APP_ID, autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED});
+    castCtx.addEventListener(cast.framework.CastContextEventType.SESSION_STATE_CHANGED, () => {
+      castknop.classList.toggle("aan", !!castCtx.getCurrentSession());
+      setTimeout(window.stuurKeuze, 1500);   // geef de Hub even tijd om de pagina te laden
+    });
+  };
+  // Stuur de gekozen competitie, periode en wisselstand naar de Hub.
+  window.stuurKeuze = () => {
+    const sessie = castCtx && castCtx.getCurrentSession();
+    if (!sessie) return;
+    sessie.sendMessage(CAST_KANAAL, {competitie: actief === LIVE ? "live" : actief === ALLES ? "alles" : COMPETITIES[actief].code, periode, wisselen}).catch(() => {});
+  };
+  castknop.onclick = () => {
+    if (!castCtx) { toonFlits("Casten werkt alleen in Chrome (Android of laptop)."); return; }
+    if (castCtx.getCurrentSession()) { castCtx.endCurrentSession(true); toonFlits("Casten gestopt."); return; }
+    castCtx.requestSession().catch(e => {
+      if (e !== "cancel") toonFlits("Casten is niet gelukt (" + e + "). Staat de Hub aan en zit je op dezelfde wifi?");
+    });
+  };
+  const sc = document.createElement("script");
+  sc.src = "https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1";
+  document.head.append(sc);
+}
+</script>
+</body>
+</html>
