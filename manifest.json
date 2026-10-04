@@ -1,0 +1,9 @@
+{
+  "name": "Tussenstanden",
+  "short_name": "Tussenstanden",
+  "start_url": "cast.html",
+  "display": "standalone",
+  "background_color": "#0d1a16",
+  "theme_color": "#0d1a16",
+  "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}]
+}
