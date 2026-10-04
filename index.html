@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tussenstanden</title>
+<meta name="theme-color" content="#0d1a16">
+<link rel="manifest" href="manifest.json">
+<title>ScoreCasting</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap">
 <style>
 /* Layout: één scherm op Hub-formaat (1024x600): balk met competities bovenin, daaronder een raster van twee kolommen met wedstrijden. */
@@ -30,7 +32,9 @@ header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
 .tab:focus-visible,.wissel:focus-visible{outline:3px solid var(--live);outline-offset:2px}
 .wissel{justify-self:end;font:600 17px var(--font);color:var(--zacht);background:none;border:0;cursor:pointer;text-transform:uppercase;letter-spacing:.03em}
 .wissel[aria-pressed="true"]{color:var(--live)}
-#klok{justify-self:end;font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+.hoek{justify-self:end;display:flex;align-items:center;gap:12px}
+#castknop{width:34px;height:34px;cursor:pointer;--connected-color:var(--live);--disconnected-color:var(--tekst)}
+#klok{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
 .dag{grid-column:1/-1;margin:4px 0 0;font-size:17px;font-weight:600;color:var(--zacht);text-transform:uppercase;letter-spacing:.06em}
 main.compact{grid-auto-rows:auto;align-content:start;overflow-y:auto;gap:5px 8px}
 main.compact .duel{padding:3px 10px;min-height:40px}
@@ -67,7 +71,7 @@ main.compact .club small{display:none}
 <body>
 <header>
   <div id="tabs" class="rij"></div>
-  <span id="klok"></span>
+  <div class="hoek"><google-cast-launcher id="castknop" title="Casten naar je Hub"></google-cast-launcher><span id="klok"></span></div>
   <div id="periodes" class="rij"></div>
   <button class="wissel" id="wissel" aria-pressed="true" title="Automatisch wisselen tussen competities">Wisselen aan</button>
 </header>
@@ -281,11 +285,22 @@ const wakker = () => navigator.wakeLock?.request("screen").catch(() => {});
 wakker(); document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && wakker());
 </script>
 <script>
-// Draait de pagina op een Cast-apparaat (zoals de Nest Hub), meld hem dan aan als cast-app en houd hem in beeld.
+const CAST_APP_ID = "28EAC2B6";
 if (/CrKey/.test(navigator.userAgent)) {
+  // De pagina draait op een Cast-apparaat (zoals de Nest Hub): meld hem aan als cast-app en houd hem in beeld.
+  document.getElementById("castknop").hidden = true;
   const sc = document.createElement("script");
   sc.src = "https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js";
   sc.onload = () => cast.framework.CastReceiverContext.getInstance().start({disableIdleTimeout: true});
+  document.head.append(sc);
+} else {
+  // Op telefoon of laptop: het cast-icoon rechtsboven start het scorebord op de Hub.
+  window.__onGCastApiAvailable = ok => {
+    if (!ok) { document.getElementById("castknop").hidden = true; return; }
+    cast.framework.CastContext.getInstance().setOptions({receiverApplicationId: CAST_APP_ID, autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED});
+  };
+  const sc = document.createElement("script");
+  sc.src = "https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1";
   document.head.append(sc);
 }
 </script>
