@@ -47,6 +47,7 @@ main.standtabel{display:block;overflow-y:auto}
 .standrij img,.standrij>span:nth-child(2){width:24px;height:24px;object-fit:contain}
 .standrij .pts{font-weight:700}
 @media (max-width:640px){.standrij{grid-template-columns:22px 22px minmax(0,1fr) 28px 40px 34px;column-gap:6px;font-size:17px;min-height:34px}.standrij img,.standrij>span:nth-child(2){width:20px;height:20px}.standrij .wgv{display:none}}
+.rood{display:inline-block;width:.42em;height:.6em;border-radius:2px;background:#e5484d;margin-left:.3em;vertical-align:baseline}
 .breek{display:none}
 .pijl{font-size:22px;line-height:1;padding:1px 10px 4px}
 .leeg{padding:30px 0}
@@ -54,7 +55,8 @@ main.standtabel{display:block;overflow-y:auto}
 .tab .n{color:var(--live);margin-left:6px}
 .tab[aria-pressed="true"] .n{color:#8a5a00}
 .tab:focus-visible,.wissel:focus-visible{outline:3px solid var(--live);outline-offset:2px}
-.wissel{justify-self:end;font:600 16px var(--font);color:var(--zacht);background:none;border:0;cursor:pointer;text-transform:uppercase;letter-spacing:.03em}
+.knoppen{justify-self:end;display:flex;gap:16px;align-items:center}
+.wissel{font:600 16px var(--font);color:var(--zacht);background:none;border:0;cursor:pointer;text-transform:uppercase;letter-spacing:.03em}
 .wissel[aria-pressed="true"]{color:var(--live)}
 .hoek{justify-self:end;display:flex;align-items:center;gap:12px}
 #castknop{background:none;border:0;padding:4px;display:flex;cursor:pointer;color:var(--tekst);border-radius:6px}
@@ -71,9 +73,9 @@ main::-webkit-scrollbar{display:none}
 .kop:first-child{margin-top:0}
 .duel{background:var(--vlak);border-radius:6px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:8px 14px;position:relative;min-height:84px}
 .duel.live::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:4px;background:var(--live);border-radius:2px}
-.duel.goal{animation:goal 1s ease-in-out 8}
+.duel.goal{animation:goal 1s ease-in-out 20}
 @keyframes goal{50%{background:var(--live);color:var(--veld)}}
-.duel.goal .min,.duel.goal .makers,.duel.goal .club{color:inherit}
+.duel.goal .club small,.duel.goal .status,.duel.goal .stand,.duel.goal .min,.duel.goal .makers,.duel.goal .club{color:inherit}
 .club{display:flex;align-items:center;gap:8px;min-width:0;font-size:clamp(18px,2.6vw,28px);font-weight:600}
 .club.uit{flex-direction:row-reverse;text-align:right}
 .club img{width:clamp(24px,3.4vw,38px);height:clamp(24px,3.4vw,38px);object-fit:contain;flex:none}
@@ -101,7 +103,7 @@ main.compact .duel.live .club small{display:-webkit-box;-webkit-line-clamp:1;fon
 [hidden]{display:none!important}
 .hub header,.hub .subbar{display:none}
 .hub .titel{display:flex}
-@media (max-width:640px){main{grid-template-columns:1fr}body{overflow:auto;padding:8px 16px}.duel{min-height:64px}.rij{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rij::-webkit-scrollbar{display:none}.tab,.tab.per{font-size:16px;white-space:nowrap;flex:none}#klok{display:none}#tabs{flex-wrap:wrap;overflow:visible;row-gap:6px}.zoektab{order:1}.breek{display:block;order:2;flex-basis:100%;height:0}#tabs .pijl,#tabs .kies{order:3}#tabs .kies{flex:1;max-width:none}main.compact .midden{flex-direction:column;align-items:center;gap:0}main.compact .club{font-size:18px}main.compact .stand,main.compact .duel.voor .stand{font-size:21px}main.compact .status{font-size:12px}header{display:flex;flex-wrap:wrap}#tabs{flex:1 1 calc(100% - 60px);min-width:0}#periodes{flex:1 1 calc(100% - 160px);min-width:0}.kies{max-width:13em}.club small{-webkit-line-clamp:4;font-size:14px}.makers{font-size:12.5px;padding-bottom:4px}.makers.thuis{text-align:left;padding-left:2px}.standrij{grid-template-columns:22px 22px minmax(0,1fr) 28px 40px 34px;column-gap:6px;font-size:17px;min-height:34px}.standrij img,.standrij>span:nth-child(2){width:22px;height:22px}.standrij .wgv{display:none}.kop{font-size:13px}.tab{font-size:14px;padding:3px 8px}main.compact .duel{min-height:36px}.titel h1{font-size:20px}.titel .n{font-size:16px}}
+@media (max-width:640px){main{grid-template-columns:1fr}body{overflow:auto;padding:8px 16px}.duel{min-height:64px}.rij{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rij::-webkit-scrollbar{display:none}.tab,.tab.per{font-size:16px;white-space:nowrap;flex:none}#klok{display:none}#periodes{flex:1 1 100%}.knoppen{flex:1 1 100%;justify-content:space-between}.wissel{font-size:14px}#tabs{flex-wrap:wrap;overflow:visible;row-gap:6px}.zoektab{order:1}.breek{display:block;order:2;flex-basis:100%;height:0}#tabs .pijl,#tabs .kies{order:3}#tabs .kies{flex:1;max-width:none}main.compact .midden{flex-direction:column;align-items:center;gap:0}main.compact .club{font-size:18px}main.compact .stand,main.compact .duel.voor .stand{font-size:21px}main.compact .status{font-size:12px}header{display:flex;flex-wrap:wrap}#tabs{flex:1 1 calc(100% - 60px);min-width:0}#periodes{min-width:0}.kies{max-width:13em}.club small{-webkit-line-clamp:4;font-size:14px}.makers{font-size:12.5px;padding-bottom:4px}.makers.thuis{text-align:left;padding-left:2px}.standrij{grid-template-columns:22px 22px minmax(0,1fr) 28px 40px 34px;column-gap:6px;font-size:17px;min-height:34px}.standrij img,.standrij>span:nth-child(2){width:22px;height:22px}.standrij .wgv{display:none}.kop{font-size:13px}.tab{font-size:14px;padding:3px 8px}main.compact .duel{min-height:36px}.titel h1{font-size:20px}.titel .n{font-size:16px}}
 @media (prefers-reduced-motion:reduce){.duel.goal{animation:none;outline:3px solid var(--live)}}
 </style>
 </head>
@@ -110,7 +112,8 @@ main.compact .duel.live .club small{display:-webkit-box;-webkit-line-clamp:1;fon
   <div id="tabs" class="rij"></div>
   <div class="hoek"><button id="castknop" aria-label="Casten naar je Hub" title="Casten naar je Hub"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path fill="currentColor" d="M1 18v3h3a3 3 0 0 0-3-3zm0-4v2a5 5 0 0 1 5 5h2a7 7 0 0 0-7-7zm0-4v2a9 9 0 0 1 9 9h2A11 11 0 0 0 1 10zm20-7H3a2 2 0 0 0-2 2v3h2V5h18v14h-7v2h7a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/></svg></button><span id="klok"></span></div>
   <div id="periodes" class="rij"></div>
-  <button class="wissel" id="wissel" aria-pressed="true" title="Automatisch wisselen tussen competities">Wisselen aan</button>
+  <div class="knoppen"><button class="wissel" id="meld" aria-pressed="false" title="Meldingen bij doelpunten en rode kaarten: voor alle wedstrijden of alleen je favorieten">Meldingen: alles</button>
+  <button class="wissel" id="wissel" aria-pressed="true" title="Automatisch wisselen tussen competities">Wisselen aan</button></div>
 </header>
 <div id="titel" class="titel" hidden><h1 id="titelnaam"></h1><span class="klok" id="klok2"></span></div>
 <input id="zoek" type="search" placeholder="Zoek een club" aria-label="Zoek een club" autocomplete="off" hidden>
@@ -141,7 +144,7 @@ const codesVan = c => c.codes || [c.code];
 const compVan = code => COMPETITIES.find(c => c.code === code);
 const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
 const KEUZEGROEPEN = [["Nederland",["ned.1","ned.2"]],["Buitenland",["eng.1","esp.1","ger.1","ita.1","fra.1","bel.1"]],["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v24";
+const VERSIE = "v27";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const FAV = -3;           // het tabblad met je favoriete clubs
 const ZOEK = -4;          // zoeken op clubnaam (alleen op telefoon of laptop)
@@ -152,6 +155,7 @@ const PERIODES = [
   {id:"vorige", naam:"Afgelopen week"},
   {id:"vandaag", naam:"Vandaag"},
   {id:"komende", naam:"Komende week"},
+  {id:"maandk", naam:"Komende maand"},
   {id:"stand", naam:"Stand"},
 ];
 const VERVERS_SEC = 30;    // hoe vaak de standen van vandaag worden opgehaald
@@ -167,12 +171,16 @@ const standen = {};       // code -> {rijen, ts, mislukt} officiële ranglijst
 const vorige = {};        // wedstrijd-id -> "thuis-uit"
 let favs = new Set();
 try { favs = new Set(JSON.parse(localStorage.getItem("favclubs") || "[]").map(String)); } catch (e) {}
+// De competities waarin je favorieten spelen: daarvan wordt een maand aan uitslagen opgehaald.
+let favComps = new Set();
+try { favComps = new Set(JSON.parse(localStorage.getItem("favcomps") || "[]")); } catch (e) {}
 const isFav = d => favs.has(d.thuis.id) || favs.has(d.uit.id);
 function wisselFav(id){
   favs.has(id) ? favs.delete(id) : favs.add(id);
   onthoud("favclubs", JSON.stringify([...favs]));
   teken(); window.stuurKeuze?.();
 }
+let alleenFav = false;    // meldingen alleen voor je favoriete clubs
 let actief = LIVE, periode = "vandaag", wisselen = true, eersteKeer = true, flitsTimer;
 
 const $ = id => document.getElementById(id);
@@ -201,8 +209,11 @@ function verwerk(ev){
     }
     return [...per].map(([n, m]) => (n + " " + m.join(", ")).trim()).join(" · ");
   };
-  const club = x => ({id: String(x.team.id), naam: x.team.shortDisplayName || x.team.displayName, logo: x.team.logo, score: x.score, makers: makers(x)});
-  return {id: ev.id, start, dag: ymd(start), soort, status, thuis: club(thuis), uit: club(uit)};
+  const rood = x => (c.details || []).filter(g => g.redCard && String(g.team?.id) === String(x.team.id));
+  const club = x => ({rood: rood(x).length, roodWie: (r => r ? ((r.athletesInvolved?.[0]?.shortName || "") + " " + (r.clock?.displayValue || "")).trim() : "")(rood(x).pop()), id: String(x.team.id), naam: x.team.shortDisplayName || x.team.displayName, logo: x.team.logo, score: x.score, makers: makers(x)});
+  const doelen = (c.details || []).filter(g => g.scoringPlay), lg = doelen[doelen.length - 1], la = lg?.athletesInvolved?.[0];
+  const laatste = lg ? ((la?.shortName || la?.displayName || "") + " " + (lg.clock?.displayValue || "")).trim() : "";
+  return {id: ev.id, start, dag: ymd(start), soort, status, laatste, aantalDoelen: doelen.length, thuis: club(thuis), uit: club(uit)};
 }
 
 async function haalDag(code, dag){
@@ -243,16 +254,19 @@ function laadStand(code){
   haalStand(code).finally(() => { bezig["s" + code] = false; teken(); });
 }
 const kalVol = {}, oudKlaar = {};
-function laadMaand(code){
-  if (oudKlaar[code] || bezig["m" + code] || !(code in kalVol)) return;
-  bezig["m" + code] = true;
-  const van = plus(-30), tot = plus(-8);
-  const dgn = kalVol[code] ? kalVol[code].filter(d => d >= van && d <= tot) : Array.from({length: 23}, (_, i) => plus(-8 - i));
+function laadMaand(code, vooruit){
+  const sleutel = code + (vooruit ? "+" : "");
+  if (oudKlaar[sleutel] || bezig["m" + sleutel] || !(code in kalVol)) return;
+  bezig["m" + sleutel] = true;
+  const van = vooruit ? plus(8) : plus(-30), tot = vooruit ? plus(30) : plus(-8);
+  const dgn = kalVol[code] ? kalVol[code].filter(d => d >= van && d <= tot) : Array.from({length: 23}, (_, i) => plus(vooruit ? 8 + i : -8 - i));
   Promise.all(dgn.filter(d => !dagen[code]?.[d]).map(d => haalDag(code, d).catch(() => {})))
-    .finally(() => { bezig["m" + code] = false; oudKlaar[code] = true; teken(); });
+    .finally(() => { bezig["m" + sleutel] = false; oudKlaar[sleutel] = true; teken(); });
 }
 
 // Vandaag: elke 30 seconden. Geeft ook de speelkalender van de competitie terug.
+const vorigeRood = {}, vorigeRoodClub = {};
+const goalTot = {};       // wedstrijd-id -> tot wanneer de regel oplicht
 async function haalVandaag(b, goals){
   try {
     const j = await haalDag(b.code, plus(0));
@@ -266,7 +280,20 @@ async function haalVandaag(b, goals){
       : [-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7].map(plus);
     for (const d of dagen[b.code][plus(0)]){
       const s = d.thuis.score + "-" + d.uit.score;
-      if (!eersteKeer && d.soort === "live" && vorige[d.id] !== undefined && vorige[d.id] !== s){ d.goal = true; goals.push({comp: b.comp, d}); }
+      if (!eersteKeer && d.soort === "live" && vorige[d.id] !== undefined && vorige[d.id] !== s){
+        const som = t => t.split("-").reduce((n, x) => n + (Number(x) || 0), 0);
+        const afgekeurd = som(s) < som(vorige[d.id]);
+        if (!alleenFav || isFav(d)){
+          if (!afgekeurd) goalTot[d.id] = Date.now() + 20000;   // de regel licht 20 seconden op
+          goals.push({comp: b.comp, d, afgekeurd});
+        }
+      }
+      const kaarten = d.thuis.rood + d.uit.rood;
+      if (!eersteKeer && d.soort === "live" && vorigeRood[d.id] !== undefined && kaarten > vorigeRood[d.id] && (!alleenFav || isFav(d))){
+        const wie = [d.thuis, d.uit].find(t => t.rood > (vorigeRoodClub[d.id + t.id] || 0)) || d.thuis;
+        goals.push({comp: b.comp, d, kaart: `Rode kaart ${wie.naam}` + (wie.roodWie ? ` (${wie.roodWie})` : "")});
+      }
+      vorigeRood[d.id] = kaarten; vorigeRoodClub[d.id + d.thuis.id] = d.thuis.rood; vorigeRoodClub[d.id + d.uit.id] = d.uit.rood;
       vorige[d.id] = s;
     }
   } catch (e) { if (!dagen[b.code]) fout[b.code] = true; }
@@ -284,8 +311,16 @@ async function ververs(){
   const goals = [];
   await Promise.all(BRONNEN.map(b => haalVandaag(b, goals)));
   if (goals.length){
-    if (actief >= 0){ actief = COMPETITIES.indexOf(goals[0].comp); periode = "vandaag"; }
-    toonFlits(goals.map(x => `GOAL  ${x.d.thuis.naam} ${x.d.thuis.score} - ${x.d.uit.score} ${x.d.uit.naam}`).join("   •   "));
+    if (actief >= 0 && wisselen){ actief = COMPETITIES.indexOf(goals[0].comp); periode = "vandaag"; }
+    toonFlits(goals.map(x => {
+      const stand = `${x.d.thuis.naam} ${x.d.thuis.score} - ${x.d.uit.score} ${x.d.uit.naam}`;
+      if (x.kaart) return `${x.kaart}  ·  ${stand}`;
+      if (x.afgekeurd) return `Doelpunt afgekeurd: ${stand}`;
+      const totaal = Number(x.d.thuis.score) + Number(x.d.uit.score);
+      // De naam van de maker komt soms later binnen dan de stand; toon hem alleen als hij bij dit doelpunt hoort.
+      return `GOAL! ${stand}` + (x.d.laatste && x.d.aantalDoelen === totaal ? `  ·  ${x.d.laatste}` : "");
+    }).join("   •   "));
+    setTimeout(teken, 20500);
   }
   if (eersteKeer){
     eersteKeer = false;
@@ -300,13 +335,13 @@ async function ververs(){
 
 function toonFlits(tekst){
   $("flits").textContent = tekst; $("flits").hidden = false;
-  clearTimeout(flitsTimer); flitsTimer = setTimeout(() => $("flits").hidden = true, 12000);
+  clearTimeout(flitsTimer); flitsTimer = setTimeout(() => $("flits").hidden = true, 15000);
 }
 
 function duelsVan(code, per){
   const nu = plus(0), alle = Object.values(dagen[code] || {}).flat();
   const uniek = [...new Map(alle.map(d => [d.id, d])).values()];
-  return uniek.filter(d => per === "vandaag" ? d.dag === nu : per === "maand" ? d.dag < nu && d.dag >= plus(-30) : per === "vorige" ? d.dag < nu && d.dag >= plus(-7) : d.dag > nu && d.dag <= plus(7))
+  return uniek.filter(d => per === "vandaag" ? d.dag === nu : per === "maand" ? d.dag < nu && d.dag >= plus(-30) : per === "maandk" ? d.dag > nu && d.dag <= plus(30) : per === "vorige" ? d.dag < nu && d.dag >= plus(-7) : d.dag > nu && d.dag <= plus(7))
               .sort((a,b) => per === "maand" || per === "vorige" ? b.start - a.start : a.start - b.start);
 }
 const groepVan = code => code === "live" ? "live" : code === "alles" ? "alles" : (COMPETITIES.find(c => c.code === code)?.groep || "nl");
@@ -327,13 +362,14 @@ function tabKnop(naam, i, n){
 
 function regel(d, metStatus, doel, label){
   const el = document.createElement("div");
-  el.className = "duel " + d.soort + (d.goal ? " goal" : "");
+  el.className = "duel " + d.soort + (goalTot[d.id] > Date.now() ? " goal" : "");
   const club = (c, kant, verl) => {
     const w = document.createElement("div"); w.className = "club " + kant + (verl ? " verliezer" : "");
     if (c.logo){ const im = document.createElement("img"); im.src = c.logo; im.alt = ""; w.append(im); }
     const t = document.createElement("div"); t.className = "naam";
     const sn = document.createElement("span"); sn.textContent = (favs.has(c.id) ? "★ " : "") + c.naam; t.append(sn);
     if (favs.has(c.id)) sn.className = "fav";
+    for (let i = 0; i < Math.min(c.rood || 0, 3); i++){ const k = document.createElement("i"); k.className = "rood"; k.title = "Rode kaart"; sn.append(k); }
     if (!document.body.classList.contains("hub")){ sn.style.cursor = "pointer"; sn.title = "Tik om als favoriet te volgen"; sn.onclick = () => wisselFav(c.id); }
     if (c.makers && d.soort !== "voor"){ const k = document.createElement("small"); k.textContent = c.makers; t.append(k); }
     w.append(t); return w;
@@ -403,14 +439,20 @@ function teken(){
     if (actief === ZOEK && q.length < 2){ lijst.className = ""; leeg("Typ een clubnaam, bijvoorbeeld Ajax."); return; }
     const past = d => actief === FAV ? isFav(d) : (d.thuis.naam + " " + d.uit.naam).toLowerCase().includes(q);
     const nu = plus(0);
-    const alle = COMPETITIES.flatMap(c => ["vorige","vandaag","komende"].flatMap(p => duelsVan(c.code, p)).filter(past).map(d => ({d, c})));
+    if (actief === FAV){
+      const voor = favComps.size;
+      for (const c of COMPETITIES) if (Object.values(dagen[c.code] || {}).flat().some(isFav)) favComps.add(c.code);
+      if (favComps.size !== voor) onthoud("favcomps", JSON.stringify([...favComps]));
+      for (const code of favComps) if (COMPETITIES.some(c => c.code === code)) laadMaand(code);
+    }
+    const alle = COMPETITIES.flatMap(c => [actief === FAV ? "maand" : "vorige","vandaag","komende"].flatMap(p => duelsVan(c.code, p)).filter(past).map(d => ({d, c})));
     const rang = x => x.d.dag === nu ? 0 : x.d.dag > nu ? 1 : 2;
     alle.sort((a,b) => rang(a) - rang(b) || (rang(a) === 2 ? b.d.start - a.d.start : a.d.start - b.d.start));
     lijst.className = alle.length > 5 ? "compact" : "";
     if (!alle.length){
       leeg(actief === ZOEK ? "Geen wedstrijden gevonden in deze twee weken."
         : !favs.size ? "Nog geen favorieten. Tik bij een wedstrijd op een clubnaam om die club te volgen."
-        : BRONNEN.some(b => !dagen[b.code] && !fout[b.code]) ? "Standen laden…" : "Je favorieten spelen niet in deze twee weken.");
+        : BRONNEN.some(b => !dagen[b.code] && !fout[b.code]) ? "Standen laden…" : "Geen wedstrijden van je favorieten gevonden.");
       return;
     }
     let dag = "";
@@ -437,6 +479,7 @@ function teken(){
   const comp = COMPETITIES[actief], code = comp.code;
   if (periode === "stand"){ laadStand(code); tekenStand(code); return; }
   if (periode === "maand") laadMaand(code);
+  if (periode === "maandk") laadMaand(code, true);
   const duels = duelsVan(code, periode);
   lijst.className = duels.length > 10 || periode !== "vandaag" ? "compact" : "";
   if (!duels.length){
@@ -444,6 +487,7 @@ function teken(){
       : fout[code] && !dagen[code] ? "Standen ophalen lukt niet. Controleer de internetverbinding; er wordt opnieuw geprobeerd."
       : periode === "vandaag" ? "Vandaag geen wedstrijden in deze competitie."
       : periode === "maand" ? (oudKlaar[code] ? "Geen wedstrijden in de afgelopen maand." : "Uitslagen laden…")
+      : periode === "maandk" ? (oudKlaar[code + "+"] ? "Geen wedstrijden in de komende maand." : "Programma laden…")
       : periode === "vorige" ? "Geen wedstrijden in de afgelopen week." : "Geen wedstrijden in de komende week.");
     return;
   }
@@ -499,8 +543,10 @@ function neemKeuzeOver(k){
   if (k.competitie === "live") actief = LIVE;
   else if (k.competitie === "alles") actief = ALLES;
   else if (k.competitie === "fav") actief = FAV;
-  if (Array.isArray(k.favs)){ favs = new Set(k.favs.map(String)); onthoud("favclubs", JSON.stringify([...favs])); }
   else if (COMPETITIES.some(c => c.code === k.competitie)) actief = COMPETITIES.findIndex(c => c.code === k.competitie);
+  if (Array.isArray(k.favComps)) for (const c of k.favComps) favComps.add(String(c));
+  if (Array.isArray(k.favs)){ favs = new Set(k.favs.map(String)); onthoud("favclubs", JSON.stringify([...favs])); }
+  if (typeof k.alleenFav === "boolean"){ alleenFav = k.alleenFav; zetMeld(); }
   if (PERIODES.some(p => p.id === k.periode)) periode = k.periode;
   if (typeof k.wisselen === "boolean" && k.wisselen !== wisselen){
     wisselen = k.wisselen;
@@ -510,6 +556,12 @@ function neemKeuzeOver(k){
   $("lijst").scrollTop = 0;
   teken();
 }
+function zetMeld(){
+  $("meld").setAttribute("aria-pressed", alleenFav);
+  $("meld").textContent = alleenFav ? "Meldingen: favorieten" : "Meldingen: alles";
+}
+$("meld").onclick = () => { alleenFav = !alleenFav; onthoud("meldfav", alleenFav ? "1" : "0"); zetMeld(); window.stuurKeuze?.(); };
+if (lees("meldfav") === "1"){ alleenFav = true; zetMeld(); }
 // Onthoud de laatste keuzes op dit apparaat.
 if (PERIODES.some(p => p.id === lees("periode"))) periode = lees("periode");
 if (COMPETITIES.some(c => c.code === lees("competitie"))) actief = COMPETITIES.findIndex(c => c.code === lees("competitie"));
@@ -523,7 +575,9 @@ $("versie").textContent = VERSIE;
 const tik = () => $("klok").textContent = new Date().toLocaleTimeString("nl-NL", {hour:"2-digit", minute:"2-digit"});
 tik(); setInterval(tik, 5000);
 teken(); ververs();
-setInterval(ververs, VERVERS_SEC * 1000);
+// Tijdens live wedstrijden elke 15 seconden, anders elke 30.
+const ronde = () => setTimeout(() => ververs().catch(() => {}).finally(ronde), (BRONNEN.some(b => aantalLive(b.code)) ? 15 : VERVERS_SEC) * 1000);
+ronde();
 setInterval(haalWeek, WEEK_MIN * 60000);
 setInterval(volgende, WISSEL_SEC * 1000);
 // Houd het scherm wakker zolang de pagina open staat (als de browser dat toestaat).
@@ -583,7 +637,7 @@ if (/CrKey/.test(navigator.userAgent)) {
   window.stuurKeuze = () => {
     const sessie = castCtx && castCtx.getCurrentSession();
     if (!sessie) return;
-    const bericht = {periode, wisselen, favs: [...favs]};
+    const bericht = {periode, wisselen, alleenFav, favs: [...favs], favComps: [...favComps]};
     if (actief !== ZOEK) bericht.competitie = SPECIAAL[actief] || COMPETITIES[actief].code;   // zoeken blijft op de telefoon
     sessie.sendMessage(CAST_KANAAL, bericht).catch(() => {});
   };
