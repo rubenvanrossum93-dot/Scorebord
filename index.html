@@ -160,7 +160,7 @@ const codesVan = c => c.codes || [c.code];
 const compVan = code => COMPETITIES.find(c => c.code === code);
 const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
 const KEUZEGROEPEN = [["Nederland",["ned.1","ned.2"]],["Buitenland",["eng.1","esp.1","ger.1","ita.1","fra.1","bel.1"]],["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v28";
+const VERSIE = "v29";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const FAV = -3;           // het tabblad met je favoriete clubs
 const ZOEK = -4;          // zoeken op clubnaam (alleen op telefoon of laptop)
@@ -196,6 +196,7 @@ function wisselFav(id){
   onthoud("favclubs", JSON.stringify([...favs]));
   teken(); window.stuurKeuze?.();
 }
+let wisselStand = false;  // bij wisselen: na het programma even de stand van dezelfde competitie
 let groot = false, favLive = false;   // groot: alleen logo's en standen; favLive: alleen live favorieten
 let alleenFav = false;    // meldingen alleen voor je favoriete clubs
 let actief = LIVE, periode = "vandaag", wisselen = true, eersteKeer = true, flitsTimer;
@@ -206,6 +207,9 @@ const plus = n => { const d = new Date(); d.setDate(d.getDate() + n); return ymd
 const onthoud = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 const lees = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 
+// ESPN levert de namen in het Nederlands; deze lijst vangt Engelse namen op die er toch tussen glippen.
+const NL = {"Netherlands":"Nederland","Germany":"Duitsland","Belgium":"België","France":"Frankrijk","Spain":"Spanje","Italy":"Italië","England":"Engeland","Scotland":"Schotland","Wales":"Wales","N Ireland":"Noord-Ierland","Northern Ireland":"Noord-Ierland","Republic of Ireland":"Ierland","Ireland":"Ierland","Switzerland":"Zwitserland","Austria":"Oostenrijk","Denmark":"Denemarken","Sweden":"Zweden","Norway":"Noorwegen","Finland":"Finland","Iceland":"IJsland","Poland":"Polen","Czechia":"Tsjechië","Czech Republic":"Tsjechië","Slovakia":"Slowakije","Hungary":"Hongarije","Romania":"Roemenië","Bulgaria":"Bulgarije","Greece":"Griekenland","Türkiye":"Turkije","Turkey":"Turkije","Croatia":"Kroatië","Serbia":"Servië","Slovenia":"Slovenië","Bosnia-Herz":"Bosnië en Herzegovina","Montenegro":"Montenegro","North Macedonia":"Noord-Macedonië","Albania":"Albanië","Kosovo":"Kosovo","Ukraine":"Oekraïne","Belarus":"Wit-Rusland","Russia":"Rusland","Moldova":"Moldavië","Georgia":"Georgië","Armenia":"Armenië","Azerbaijan":"Azerbeidzjan","Kazakhstan":"Kazachstan","Lithuania":"Litouwen","Latvia":"Letland","Estonia":"Estland","Cyprus":"Cyprus","Malta":"Malta","Luxembourg":"Luxemburg","Faroe Islands":"Faeröer","Portugal":"Portugal","Bayern Munich":"Bayern München","Inter Milan":"Inter","AC Milan":"AC Milan"};
+const nl = n => NL[n] || n;
 function verwerk(ev){
   const c = ev.competitions[0], t = c.status.type;
   const thuis = c.competitors.find(x => x.homeAway === "home"), uit = c.competitors.find(x => x.homeAway === "away");
@@ -227,14 +231,14 @@ function verwerk(ev){
     return [...per].map(([n, m]) => (n + " " + m.join(", ")).trim()).join(" · ");
   };
   const rood = x => (c.details || []).filter(g => g.redCard && String(g.team?.id) === String(x.team.id));
-  const club = x => ({rood: rood(x).length, roodWie: (r => r ? ((r.athletesInvolved?.[0]?.shortName || "") + " " + (r.clock?.displayValue || "")).trim() : "")(rood(x).pop()), id: String(x.team.id), naam: x.team.shortDisplayName || x.team.displayName, logo: x.team.logo, afk: x.team.abbreviation || (x.team.shortDisplayName || "").slice(0,3).toUpperCase(), score: x.score, makers: makers(x)});
+  const club = x => ({rood: rood(x).length, roodWie: (r => r ? ((r.athletesInvolved?.[0]?.shortName || "") + " " + (r.clock?.displayValue || "")).trim() : "")(rood(x).pop()), id: String(x.team.id), naam: nl(x.team.shortDisplayName || x.team.displayName), logo: x.team.logo, afk: x.team.abbreviation || (x.team.shortDisplayName || "").slice(0,3).toUpperCase(), score: x.score, makers: makers(x)});
   const doelen = (c.details || []).filter(g => g.scoringPlay), lg = doelen[doelen.length - 1], la = lg?.athletesInvolved?.[0];
   const laatste = lg ? ((la?.shortName || la?.displayName || "") + " " + (lg.clock?.displayValue || "")).trim() : "";
   return {id: ev.id, start, dag: ymd(start), soort, status, laatste, aantalDoelen: doelen.length, thuis: club(thuis), uit: club(uit)};
 }
 
 async function haalDag(code, dag){
-  const r = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${code}/scoreboard?dates=${dag}`, {cache:"no-store", signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined});
+  const r = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${code}/scoreboard?dates=${dag}&lang=nl&region=nl`, {cache:"no-store", signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined});
   if (!r.ok) throw new Error(r.status);
   const j = await r.json();
   (dagen[code] ||= {})[dag] = (j.events || []).map(verwerk);
@@ -246,7 +250,7 @@ async function haalStand(code){
   const oud = standen[code];
   if (oud && Date.now() - oud.ts < STAND_SEC * 1000) return;
   try {
-    const r = await fetch(`https://site.api.espn.com/apis/v2/sports/soccer/${code}/standings`, {cache:"no-store", signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined});
+    const r = await fetch(`https://site.api.espn.com/apis/v2/sports/soccer/${code}/standings?lang=nl&region=nl`, {cache:"no-store", signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined});
     if (!r.ok) throw new Error(r.status);
     const j = await r.json();
     const groepen = (j.children || []).filter(c => c.standings?.entries?.length);
@@ -254,7 +258,7 @@ async function haalStand(code){
     const stat = (e, n) => { const x = (e.stats || []).find(q => q.name === n); return x ? x.value ?? Number(x.displayValue) : 0; };
     const rijen = groepen.flatMap(groep => (groep.standings?.entries || []).map(e => ({
       groep: groepen.length > 1 ? (groep.name || groep.abbreviation || "") : "",
-      id: String(e.team.id), naam: e.team.shortDisplayName || e.team.displayName, logo: e.team.logos?.[0]?.href || "",
+      id: String(e.team.id), naam: nl(e.team.shortDisplayName || e.team.displayName), logo: e.team.logos?.[0]?.href || "",
       rank: stat(e, "rank"), gp: stat(e, "gamesPlayed"), w: stat(e, "wins"), d: stat(e, "ties"), l: stat(e, "losses"),
       gd: stat(e, "pointDifferential"), gf: stat(e, "pointsFor"), ga: stat(e, "pointsAgainst"), pts: stat(e, "points"),
       note: e.note?.description || "", noteKleur: e.note?.color || ""
@@ -367,7 +371,7 @@ const aantalLive = code => duelsVan(code, "vandaag").filter(d => d.soort === "li
 
 function knop(tekst, aan, klik, klasse){
   const b = document.createElement("button");
-  b.className = klasse; b.setAttribute("aria-pressed", aan); b.onclick = klik;
+  b.className = klasse; b.setAttribute("aria-pressed", aan); b.onclick = () => { wisselStand = false; klik(); };
   b.append(tekst);
   return b;
 }
@@ -428,7 +432,7 @@ function teken(){
       kies.append(og);
     }
     kies.value = actief >= 0 ? String(actief) : "";
-    kies.onchange = () => { if (kies.value === "") return; actief = Number(kies.value); onthoud("competitie", COMPETITIES[actief].code); kies.blur(); teken(); window.stuurKeuze?.(); };
+    kies.onchange = () => { if (kies.value === "") return; wisselStand = false; actief = Number(kies.value); onthoud("competitie", COMPETITIES[actief].code); kies.blur(); teken(); window.stuurKeuze?.(); };
     const stap = n => () => { actief = actief < 0 ? (n > 0 ? 0 : COMPETITIES.length - 1) : (actief + n + COMPETITIES.length) % COMPETITIES.length; onthoud("competitie", COMPETITIES[actief].code); $("lijst").scrollTop = 0; teken(); window.stuurKeuze?.(); };
     const pijl = (t, n, lab) => { const b = knop(t, false, stap(n), "tab pijl"); b.setAttribute("aria-label", lab); b.title = lab; b.removeAttribute("aria-pressed"); return b; };
     const breek = document.createElement("span"); breek.className = "breek";
@@ -445,7 +449,7 @@ function teken(){
   per.hidden = actief < 0 && actief !== FAV;
   $("zoek").hidden = actief !== ZOEK;
   const cast = document.body.classList.contains("hub");
-  const titelTekst = actief === FAV ? (favLive ? "Favorieten · Live" : "Favorieten") : actief === ZOEK ? "Zoeken" : actief === LIVE ? "Live" : actief === ALLES ? "Alles vandaag" : COMPETITIES[actief].naam + (periode === "stand" ? " · Stand" : periode === "vandaag" ? "" : " · " + PERIODES.find(p => p.id === periode).naam);
+  const titelTekst = actief === FAV ? (favLive ? "Favorieten · Live" : "Favorieten") : actief === ZOEK ? "Zoeken" : actief === LIVE ? "Live" : actief === ALLES ? "Alles vandaag" : COMPETITIES[actief].naam + (periode === "stand" || wisselStand ? " · Stand" : periode === "vandaag" ? "" : " · " + PERIODES.find(p => p.id === periode).naam);
   $("titel").hidden = !cast && actief >= 0 && periode !== "stand" ? true : false;
   $("titel").hidden = !cast;
   if (cast){
@@ -510,7 +514,8 @@ function teken(){
   }
 
   const comp = COMPETITIES[actief], code = comp.code;
-  if (periode === "stand"){ laadStand(code); tekenStand(code); return; }
+  if (periode === "stand" || wisselStand){ laadStand(code); tekenStand(code); return; }
+  if (wisselen) laadStand(code);   // alvast ophalen voor de wissel naar de stand
   if (periode === "maand") laadMaand(code);
   if (periode === "maandk") laadMaand(code, true);
   const duels = duelsVan(code, periode);
@@ -559,8 +564,13 @@ function volgende(){
   const idx = COMPETITIES.map((c,i) => i);
   let kandidaten = periode === "vandaag" ? idx.filter(i => aantalLive(COMPETITIES[i].code)) : [];
   if (!kandidaten.length) kandidaten = idx.filter(i => duelsVan(COMPETITIES[i].code, periode).length);
-  if (!kandidaten.length) return;
+  // Eerst het programma, dan de stand van dezelfde competitie, dan door naar de volgende.
+  const st = standen[COMPETITIES[actief].code];
+  if (periode !== "stand" && !wisselStand && st?.rijen?.length){ wisselStand = true; $("lijst").scrollTop = 0; teken(); return; }
+  wisselStand = false;
+  if (!kandidaten.length){ teken(); return; }
   actief = kandidaten.find(i => i > actief) ?? kandidaten[0];
+  $("lijst").scrollTop = 0;
   teken();
 }
 
@@ -588,6 +598,7 @@ function neemKeuzeOver(k){
     $("wissel").setAttribute("aria-pressed", wisselen);
     $("wissel").textContent = wisselen ? "Wisselen aan" : "Wisselen uit";
   }
+  wisselStand = false;
   $("lijst").scrollTop = 0;
   teken();
 }
@@ -640,7 +651,7 @@ if (/CrKey/.test(navigator.userAgent)) {
   let pos = 0, wachtTot = 0, vorigeTijd = 0, weergave = "";
   const glij = nu => {
     const m = document.getElementById("lijst"), max = m.scrollHeight - m.clientHeight;
-    const w = actief + "|" + periode;
+    const w = actief + "|" + periode + "|" + wisselStand;
     if (w !== weergave){ weergave = w; pos = 0; wachtTot = nu + WACHT_BOVEN; }
     if (max <= 4){ pos = 0; }
     else if (nu >= wachtTot){
