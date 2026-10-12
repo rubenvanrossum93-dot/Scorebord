@@ -49,6 +49,21 @@ main.standtabel{display:block;overflow-y:auto}
 @media (max-width:640px){.standrij{grid-template-columns:22px 22px minmax(0,1fr) 28px 40px 34px;column-gap:6px;font-size:17px;min-height:34px}.standrij img,.standrij>span:nth-child(2){width:20px;height:20px}.standrij .wgv{display:none}}
 .rood{display:inline-block;width:.42em;height:.6em;border-radius:2px;background:#e5484d;margin-left:.3em;vertical-align:baseline}
 .breek{display:none}
+.afk,.favster{display:none}
+/* Formaat groot: alleen logo's en de stand, in tegels */
+.groot main{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));max-width:none}
+.groot .standnoot{grid-column:1/-1}
+.groot .duel,.groot main.compact .duel{min-height:118px;padding:8px 14px;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+.groot .club,.groot .club.uit{flex-direction:column;justify-content:center;align-items:center;gap:2px;position:relative}
+.groot .club .naam{display:none}
+.groot .club img,.groot main.compact .club img{width:76px;height:76px}
+.groot .afk{display:flex;align-items:center;justify-content:center;width:76px;height:76px;border-radius:50%;background:var(--lijn);font-size:22px}
+.groot .favster{display:block;position:absolute;top:-4px;right:6px;color:var(--live);font-size:20px}
+.groot .midden,.groot main.compact .midden{display:flex;flex-direction:column;align-items:center;gap:2px}
+.groot .stand,.groot main.compact .stand,.groot .duel.voor .stand,.groot main.compact .duel.voor .stand{font-size:58px}
+.groot .duel.voor .stand,.groot main.compact .duel.voor .stand{font-size:40px}
+.groot .status,.groot main.compact .status{font-size:22px}
+.groot .kop{font-size:20px}
 .pijl{font-size:22px;line-height:1;padding:1px 10px 4px}
 .leeg{padding:30px 0}
 #versie{position:fixed;right:8px;bottom:5px;font-size:11px;color:var(--zacht);opacity:.6;pointer-events:none}
@@ -103,7 +118,7 @@ main.compact .duel.live .club small{display:-webkit-box;-webkit-line-clamp:1;fon
 [hidden]{display:none!important}
 .hub header,.hub .subbar{display:none}
 .hub .titel{display:flex}
-@media (max-width:640px){main{grid-template-columns:1fr}body{overflow:auto;padding:8px 16px}.duel{min-height:64px}.rij{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rij::-webkit-scrollbar{display:none}.tab,.tab.per{font-size:16px;white-space:nowrap;flex:none}#klok{display:none}#periodes{flex:1 1 100%}.knoppen{flex:1 1 100%;justify-content:space-between}.wissel{font-size:14px}#tabs{flex-wrap:wrap;overflow:visible;row-gap:6px}.zoektab{order:1}.breek{display:block;order:2;flex-basis:100%;height:0}#tabs .pijl,#tabs .kies{order:3}#tabs .kies{flex:1;max-width:none}main.compact .midden{flex-direction:column;align-items:center;gap:0}main.compact .club{font-size:18px}main.compact .stand,main.compact .duel.voor .stand{font-size:21px}main.compact .status{font-size:12px}header{display:flex;flex-wrap:wrap}#tabs{flex:1 1 calc(100% - 60px);min-width:0}#periodes{min-width:0}.kies{max-width:13em}.club small{-webkit-line-clamp:4;font-size:14px}.makers{font-size:12.5px;padding-bottom:4px}.makers.thuis{text-align:left;padding-left:2px}.standrij{grid-template-columns:22px 22px minmax(0,1fr) 28px 40px 34px;column-gap:6px;font-size:17px;min-height:34px}.standrij img,.standrij>span:nth-child(2){width:22px;height:22px}.standrij .wgv{display:none}.kop{font-size:13px}.tab{font-size:14px;padding:3px 8px}main.compact .duel{min-height:36px}.titel h1{font-size:20px}.titel .n{font-size:16px}}
+@media (max-width:640px){main{grid-template-columns:1fr}body{overflow:auto;padding:8px 16px}.duel{min-height:64px}.rij{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rij::-webkit-scrollbar{display:none}.tab,.tab.per{font-size:16px;white-space:nowrap;flex:none}#klok{display:none}#periodes{flex:1 1 100%}.knoppen{flex:1 1 100%;justify-content:space-between}.wissel{font-size:12.5px;white-space:nowrap;letter-spacing:0}.knoppen{gap:6px}#tabs{flex-wrap:wrap;overflow:visible;row-gap:6px}.zoektab{order:1}.breek{display:block;order:2;flex-basis:100%;height:0}#tabs .pijl,#tabs .kies{order:3}#tabs .kies{flex:1;max-width:none}main.compact .midden{flex-direction:column;align-items:center;gap:0}main.compact .club{font-size:18px}main.compact .stand,main.compact .duel.voor .stand{font-size:21px}main.compact .status{font-size:12px}header{display:flex;flex-wrap:wrap}#tabs{flex:1 1 calc(100% - 60px);min-width:0}#periodes{min-width:0}.kies{max-width:13em}.club small{-webkit-line-clamp:4;font-size:14px}.makers{font-size:12.5px;padding-bottom:4px}.makers.thuis{text-align:left;padding-left:2px}.standrij{grid-template-columns:22px 22px minmax(0,1fr) 28px 40px 34px;column-gap:6px;font-size:17px;min-height:34px}.standrij img,.standrij>span:nth-child(2){width:22px;height:22px}.standrij .wgv{display:none}.kop{font-size:13px}.tab{font-size:14px;padding:3px 8px}main.compact .duel{min-height:36px}.titel h1{font-size:20px}.titel .n{font-size:16px}}
 @media (prefers-reduced-motion:reduce){.duel.goal{animation:none;outline:3px solid var(--live)}}
 </style>
 </head>
@@ -112,7 +127,8 @@ main.compact .duel.live .club small{display:-webkit-box;-webkit-line-clamp:1;fon
   <div id="tabs" class="rij"></div>
   <div class="hoek"><button id="castknop" aria-label="Casten naar je Hub" title="Casten naar je Hub"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path fill="currentColor" d="M1 18v3h3a3 3 0 0 0-3-3zm0-4v2a5 5 0 0 1 5 5h2a7 7 0 0 0-7-7zm0-4v2a9 9 0 0 1 9 9h2A11 11 0 0 0 1 10zm20-7H3a2 2 0 0 0-2 2v3h2V5h18v14h-7v2h7a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/></svg></button><span id="klok"></span></div>
   <div id="periodes" class="rij"></div>
-  <div class="knoppen"><button class="wissel" id="meld" aria-pressed="false" title="Meldingen bij doelpunten en rode kaarten: voor alle wedstrijden of alleen je favorieten">Meldingen: alles</button>
+  <div class="knoppen"><button class="wissel" id="formaat" aria-pressed="false" title="Groot: alleen logo's en standen, goed leesbaar op een klein scherm">Normaal beeld</button>
+  <button class="wissel" id="meld" aria-pressed="false" title="Meldingen bij doelpunten en rode kaarten: voor alle wedstrijden of alleen je favorieten">Alle meldingen</button>
   <button class="wissel" id="wissel" aria-pressed="true" title="Automatisch wisselen tussen competities">Wisselen aan</button></div>
 </header>
 <div id="titel" class="titel" hidden><h1 id="titelnaam"></h1><span class="klok" id="klok2"></span></div>
@@ -144,7 +160,7 @@ const codesVan = c => c.codes || [c.code];
 const compVan = code => COMPETITIES.find(c => c.code === code);
 const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
 const KEUZEGROEPEN = [["Nederland",["ned.1","ned.2"]],["Buitenland",["eng.1","esp.1","ger.1","ita.1","fra.1","bel.1"]],["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v27";
+const VERSIE = "v28";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const FAV = -3;           // het tabblad met je favoriete clubs
 const ZOEK = -4;          // zoeken op clubnaam (alleen op telefoon of laptop)
@@ -180,6 +196,7 @@ function wisselFav(id){
   onthoud("favclubs", JSON.stringify([...favs]));
   teken(); window.stuurKeuze?.();
 }
+let groot = false, favLive = false;   // groot: alleen logo's en standen; favLive: alleen live favorieten
 let alleenFav = false;    // meldingen alleen voor je favoriete clubs
 let actief = LIVE, periode = "vandaag", wisselen = true, eersteKeer = true, flitsTimer;
 
@@ -210,7 +227,7 @@ function verwerk(ev){
     return [...per].map(([n, m]) => (n + " " + m.join(", ")).trim()).join(" · ");
   };
   const rood = x => (c.details || []).filter(g => g.redCard && String(g.team?.id) === String(x.team.id));
-  const club = x => ({rood: rood(x).length, roodWie: (r => r ? ((r.athletesInvolved?.[0]?.shortName || "") + " " + (r.clock?.displayValue || "")).trim() : "")(rood(x).pop()), id: String(x.team.id), naam: x.team.shortDisplayName || x.team.displayName, logo: x.team.logo, score: x.score, makers: makers(x)});
+  const club = x => ({rood: rood(x).length, roodWie: (r => r ? ((r.athletesInvolved?.[0]?.shortName || "") + " " + (r.clock?.displayValue || "")).trim() : "")(rood(x).pop()), id: String(x.team.id), naam: x.team.shortDisplayName || x.team.displayName, logo: x.team.logo, afk: x.team.abbreviation || (x.team.shortDisplayName || "").slice(0,3).toUpperCase(), score: x.score, makers: makers(x)});
   const doelen = (c.details || []).filter(g => g.scoringPlay), lg = doelen[doelen.length - 1], la = lg?.athletesInvolved?.[0];
   const laatste = lg ? ((la?.shortName || la?.displayName || "") + " " + (lg.clock?.displayValue || "")).trim() : "";
   return {id: ev.id, start, dag: ymd(start), soort, status, laatste, aantalDoelen: doelen.length, thuis: club(thuis), uit: club(uit)};
@@ -365,7 +382,9 @@ function regel(d, metStatus, doel, label){
   el.className = "duel " + d.soort + (goalTot[d.id] > Date.now() ? " goal" : "");
   const club = (c, kant, verl) => {
     const w = document.createElement("div"); w.className = "club " + kant + (verl ? " verliezer" : "");
-    if (c.logo){ const im = document.createElement("img"); im.src = c.logo; im.alt = ""; w.append(im); }
+    if (c.logo){ const im = document.createElement("img"); im.src = c.logo; im.alt = c.naam; w.append(im); }
+    else { const a = document.createElement("b"); a.className = "afk"; a.textContent = c.afk; w.append(a); }
+    if (favs.has(c.id)){ const st = document.createElement("b"); st.className = "favster"; st.textContent = "★"; w.append(st); }
     const t = document.createElement("div"); t.className = "naam";
     const sn = document.createElement("span"); sn.textContent = (favs.has(c.id) ? "★ " : "") + c.naam; t.append(sn);
     if (favs.has(c.id)) sn.className = "fav";
@@ -417,14 +436,16 @@ function teken(){
     const zk = tabKnop("Zoek", ZOEK, 0); zk.classList.add("zoektab"); tabs.append(zk);
   }
   const per = $("periodes"); per.textContent = "";
-  PERIODES.forEach(p => per.append(knop(p.naam, p.id === periode, () => { periode = p.id; onthoud("periode", p.id); teken(); window.stuurKeuze?.(); }, "tab per")));
+  if (actief === FAV){
+    [["Alle wedstrijden", false], ["Live", true]].forEach(([t, v]) => per.append(knop(t, favLive === v, () => { favLive = v; onthoud("favlive", v ? "1" : "0"); teken(); window.stuurKeuze?.(); }, "tab per")));
+  } else PERIODES.forEach(p => per.append(knop(p.naam, p.id === periode, () => { periode = p.id; onthoud("periode", p.id); teken(); window.stuurKeuze?.(); }, "tab per")));
 
   const lijst = $("lijst");
   lijst.textContent = "";
-  per.hidden = actief < 0;
+  per.hidden = actief < 0 && actief !== FAV;
   $("zoek").hidden = actief !== ZOEK;
   const cast = document.body.classList.contains("hub");
-  const titelTekst = actief === FAV ? "Favorieten" : actief === ZOEK ? "Zoeken" : actief === LIVE ? "Live" : actief === ALLES ? "Alles vandaag" : COMPETITIES[actief].naam + (periode === "stand" ? " · Stand" : periode === "vandaag" ? "" : " · " + PERIODES.find(p => p.id === periode).naam);
+  const titelTekst = actief === FAV ? (favLive ? "Favorieten · Live" : "Favorieten") : actief === ZOEK ? "Zoeken" : actief === LIVE ? "Live" : actief === ALLES ? "Alles vandaag" : COMPETITIES[actief].naam + (periode === "stand" ? " · Stand" : periode === "vandaag" ? "" : " · " + PERIODES.find(p => p.id === periode).naam);
   $("titel").hidden = !cast && actief >= 0 && periode !== "stand" ? true : false;
   $("titel").hidden = !cast;
   if (cast){
@@ -448,6 +469,18 @@ function teken(){
     const alle = COMPETITIES.flatMap(c => [actief === FAV ? "maand" : "vorige","vandaag","komende"].flatMap(p => duelsVan(c.code, p)).filter(past).map(d => ({d, c})));
     const rang = x => x.d.dag === nu ? 0 : x.d.dag > nu ? 1 : 2;
     alle.sort((a,b) => rang(a) - rang(b) || (rang(a) === 2 ? b.d.start - a.d.start : a.d.start - b.d.start));
+    if (actief === FAV && favLive && alle.length){
+      const live = alle.filter(x => x.d.soort === "live");
+      if (live.length){ alle.length = 0; alle.push(...live); }
+      else {
+        const vandaag = alle.filter(x => x.d.dag === nu);
+        const sn = document.createElement("div"); sn.className = "standnoot";
+        sn.textContent = vandaag.length ? "● Je favorieten spelen nu niet. Vandaag:" : "● Je favorieten spelen nu niet, en vandaag ook niet.";
+        lijst.append(sn);
+        alle.length = 0; alle.push(...vandaag);
+        if (!vandaag.length) return;
+      }
+    }
     lijst.className = alle.length > 5 ? "compact" : "";
     if (!alle.length){
       leeg(actief === ZOEK ? "Geen wedstrijden gevonden in deze twee weken."
@@ -546,6 +579,8 @@ function neemKeuzeOver(k){
   else if (COMPETITIES.some(c => c.code === k.competitie)) actief = COMPETITIES.findIndex(c => c.code === k.competitie);
   if (Array.isArray(k.favComps)) for (const c of k.favComps) favComps.add(String(c));
   if (Array.isArray(k.favs)){ favs = new Set(k.favs.map(String)); onthoud("favclubs", JSON.stringify([...favs])); }
+  if (typeof k.groot === "boolean"){ groot = k.groot; zetFormaat(); }
+  if (typeof k.favLive === "boolean") favLive = k.favLive;
   if (typeof k.alleenFav === "boolean"){ alleenFav = k.alleenFav; zetMeld(); }
   if (PERIODES.some(p => p.id === k.periode)) periode = k.periode;
   if (typeof k.wisselen === "boolean" && k.wisselen !== wisselen){
@@ -556,9 +591,17 @@ function neemKeuzeOver(k){
   $("lijst").scrollTop = 0;
   teken();
 }
+function zetFormaat(){
+  document.body.classList.toggle("groot", groot);
+  $("formaat").setAttribute("aria-pressed", groot);
+  $("formaat").textContent = groot ? "Groot beeld" : "Normaal beeld";
+}
+$("formaat").onclick = () => { groot = !groot; onthoud("groot", groot ? "1" : "0"); zetFormaat(); teken(); window.stuurKeuze?.(); };
+if (lees("groot") === "1"){ groot = true; zetFormaat(); }
+if (lees("favlive") === "1") favLive = true;
 function zetMeld(){
   $("meld").setAttribute("aria-pressed", alleenFav);
-  $("meld").textContent = alleenFav ? "Meldingen: favorieten" : "Meldingen: alles";
+  $("meld").textContent = alleenFav ? "Meldingen: ★" : "Alle meldingen";
 }
 $("meld").onclick = () => { alleenFav = !alleenFav; onthoud("meldfav", alleenFav ? "1" : "0"); zetMeld(); window.stuurKeuze?.(); };
 if (lees("meldfav") === "1"){ alleenFav = true; zetMeld(); }
@@ -637,7 +680,7 @@ if (/CrKey/.test(navigator.userAgent)) {
   window.stuurKeuze = () => {
     const sessie = castCtx && castCtx.getCurrentSession();
     if (!sessie) return;
-    const bericht = {periode, wisselen, alleenFav, favs: [...favs], favComps: [...favComps]};
+    const bericht = {periode, wisselen, alleenFav, groot, favLive, favs: [...favs], favComps: [...favComps]};
     if (actief !== ZOEK) bericht.competitie = SPECIAAL[actief] || COMPETITIES[actief].code;   // zoeken blijft op de telefoon
     sessie.sendMessage(CAST_KANAAL, bericht).catch(() => {});
   };
