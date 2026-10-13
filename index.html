@@ -49,6 +49,7 @@ main.standtabel{display:block;overflow-y:auto}
 @media (max-width:640px){.standrij{grid-template-columns:22px 22px minmax(0,1fr) 28px 40px 34px;column-gap:6px;font-size:17px;min-height:34px}.standrij img,.standrij>span:nth-child(2){width:20px;height:20px}.standrij .wgv{display:none}}
 .rood{display:inline-block;width:.42em;height:.6em;border-radius:2px;background:#e5484d;margin-left:.3em;vertical-align:baseline}
 .breek{display:none}
+.rood.klein{width:.55em;height:.8em;margin:0 .1em 0 0;vertical-align:-.05em}
 .vastknop{padding:2px 10px}
 .duel.optv .stand{color:var(--zacht);font-size:26px;letter-spacing:.1em}
 .duel.optv .club span{color:var(--zacht)}
@@ -254,7 +255,7 @@ const codesVan = c => c.codes || [c.code];
 const compVan = code => COMPETITIES.find(c => c.code === code);
 const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
 const KEUZEGROEPEN = [["Nederland",["ned.1","ned.2"]],["Buitenland",["eng.1","esp.1","ger.1","ita.1","fra.1","bel.1"]],["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v40";
+const VERSIE = "v41";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const FAV = -3;           // het tabblad met je favoriete clubs
 const ZOEK = -4;          // zoeken op clubnaam (alleen op telefoon of laptop)
@@ -342,7 +343,7 @@ function verwerk(ev){
     return [...per].map(([n, m]) => (n + " " + m.join(", ")).trim()).join(" · ");
   };
   const rood = x => (c.details || []).filter(g => g.redCard && String(g.team?.id) === String(x.team.id));
-  const club = x => ({rood: rood(x).length, roodWie: (r => r ? ((r.athletesInvolved?.[0]?.shortName || "") + " " + (r.clock?.displayValue || "")).trim() : "")(rood(x).pop()), id: String(x.team.id), naam: nl(x.team.shortDisplayName || x.team.displayName), logo: x.team.logo, afk: x.team.abbreviation || (x.team.shortDisplayName || "").slice(0,3).toUpperCase(), score: x.score, makers: makers(x)});
+  const club = x => ({rood: rood(x).length, roodNamen: rood(x).map(r => ((r.athletesInvolved?.[0]?.shortName || r.athletesInvolved?.[0]?.displayName || "") + " " + (r.clock?.displayValue || "")).trim()), roodWie: (r => r ? ((r.athletesInvolved?.[0]?.shortName || "") + " " + (r.clock?.displayValue || "")).trim() : "")(rood(x).pop()), id: String(x.team.id), naam: nl(x.team.shortDisplayName || x.team.displayName), logo: x.team.logo, afk: x.team.abbreviation || (x.team.shortDisplayName || "").slice(0,3).toUpperCase(), score: x.score, makers: makers(x)});
   const doelen = (c.details || []).filter(g => g.scoringPlay), lg = doelen[doelen.length - 1], la = lg?.athletesInvolved?.[0];
   const laatste = lg ? ((la?.shortName || la?.displayName || "") + " " + (lg.clock?.displayValue || "")).trim() : "";
   // Verstreken speeltijd als deel van de wedstrijd (0 tot 1), voor de voortgangsbalk.
@@ -525,7 +526,16 @@ function regel(d, metStatus, doel, label){
     if (favs.has(c.id)) sn.className = "fav";
     for (let i = 0; i < Math.min(opTv ? 0 : c.rood || 0, 3); i++){ const k = document.createElement("i"); k.className = "rood"; k.title = "Rode kaart"; sn.append(k); }
     if (!document.body.classList.contains("hub")){ sn.style.cursor = "pointer"; sn.title = "Tik om als favoriet te volgen"; sn.onclick = () => wisselFav(c.id); }
-    if (c.makers && d.soort !== "voor" && !opTv){ const k = document.createElement("small"); k.textContent = c.makers; t.append(k); }
+    const roodN = opTv ? [] : (c.roodNamen || []);
+    if ((c.makers || roodN.length) && d.soort !== "voor" && !opTv){
+      const k = document.createElement("small"); k.textContent = c.makers || "";
+      // Rode kaarten met naam achter de doelpuntenmakers.
+      roodN.forEach((n, i) => {
+        if (c.makers || i) k.append("  ");
+        const kaart = document.createElement("i"); kaart.className = "rood klein"; k.append(kaart, " " + n);
+      });
+      t.append(k);
+    }
     w.append(t); return w;
   };
   const m = document.createElement("div"); m.className = "midden";
