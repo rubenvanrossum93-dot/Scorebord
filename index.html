@@ -110,6 +110,22 @@ main.focusvak{display:flex;flex-direction:column;justify-content:center;gap:2vh;
 .fstatus{font-size:6vh;font-weight:700;color:var(--zacht)}
 .fstatus.live{color:var(--live)}
 .fteller{text-align:center;font-size:3vh;color:var(--zacht)}
+/* Tijdlijn met doelpunten en kaarten bij "één wedstrijd" */
+main.focusvak.metdetails{justify-content:flex-start;gap:1.2vh;padding-top:1vh}
+.metdetails .fclub img,.metdetails .fafk{width:20vh;height:20vh}
+.metdetails .fstand{font-size:20vh}
+.metdetails .fnaam{font-size:5vh}
+.metdetails .fkop{font-size:4vh}
+.tijdlijn{display:flex;flex-direction:column;gap:.6vh;max-width:min(1100px,96vw);width:100%;margin:0 auto}
+.tlregel{display:grid;grid-template-columns:minmax(0,1fr) 11vh minmax(0,1fr);align-items:center;column-gap:2vw;font-size:4vh;line-height:1.15}
+.tlthuis{display:flex;justify-content:flex-end;align-items:center;gap:1.2vh;min-width:0;text-align:right}
+.tluit{display:flex;justify-content:flex-start;align-items:center;gap:1.2vh;min-width:0}
+.tlthuis span,.tluit span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tlmin{text-align:center;color:var(--zacht);font-variant-numeric:tabular-nums;font-size:3.4vh}
+.tl-goal{flex:none;width:2.6vh;height:2.6vh;border-radius:50%;background:var(--tekst);box-shadow:inset 0 0 0 .5vh var(--vlak)}
+.tl-geel,.tl-rood{flex:none;width:2vh;height:2.8vh;border-radius:.3vh;background:#f5c518}
+.tl-rood{background:#e5484d}
+.tlmeer{text-align:center;font-size:2.8vh;color:var(--zacht)}
 /* Standformaten: volledig (alle kolommen), groot (~9 clubs in beeld), xl (~6), xxl (~4) */
 .stand-groot .standrij,.stand-xl .standrij,.stand-xxl .standrij{grid-template-columns:var(--sb1) var(--sb1) minmax(0,1fr) var(--sb2) var(--sb3) var(--sb3);column-gap:min(2vw,2vh);font-size:var(--sf);min-height:var(--sh);padding:0 2vw}
 .stand-groot{--sf:min(5.5vh,6vw);--sh:min(9vh,11vw);--si:min(6vh,7vw);--sb1:min(7vh,8vw);--sb2:min(9vh,10vw);--sb3:min(12vh,12vw)}
@@ -238,7 +254,7 @@ const codesVan = c => c.codes || [c.code];
 const compVan = code => COMPETITIES.find(c => c.code === code);
 const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
 const KEUZEGROEPEN = [["Nederland",["ned.1","ned.2"]],["Buitenland",["eng.1","esp.1","ger.1","ita.1","fra.1","bel.1"]],["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v39";
+const VERSIE = "v40";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const FAV = -3;           // het tabblad met je favoriete clubs
 const ZOEK = -4;          // zoeken op clubnaam (alleen op telefoon of laptop)
@@ -337,7 +353,15 @@ function verwerk(ev){
     deel = t.name === "STATUS_HALFTIME" ? 45 / 90 : Math.min(per === 1 ? Math.min(m, 45) : per === 2 ? Math.min(m, 90) : Math.min(m, 120), totaal) / totaal;
     if (per > 4) deel = 1;   // strafschoppen
   }
-  return {id: ev.id, start, dag: ymd(start), soort, status, laatste, deel, aantalDoelen: doelen.length, thuis: club(thuis), uit: club(uit)};
+  // Tijdlijn voor "één wedstrijd": doelpunten en kaarten met minuut en speler.
+  const minuutVan = g => { const t = String(g.clock?.displayValue || ""); const m = t.match(/(\d+)(?:'?\s*\+\s*(\d+))?/); return m ? Number(m[1]) + (Number(m[2]) || 0) / 100 : 0; };
+  const gebeurtenissen = (c.details || []).filter(g => g.scoringPlay || g.yellowCard || g.redCard).map(g => ({
+    min: g.clock?.displayValue || "", volgorde: minuutVan(g),
+    soort: g.scoringPlay ? "goal" : g.redCard ? "rood" : "geel",
+    wie: (g.athletesInvolved?.[0]?.shortName || g.athletesInvolved?.[0]?.displayName || "") + (g.scoringPlay && g.penaltyKick ? " (p)" : "") + (g.scoringPlay && g.ownGoal ? " (e.d.)" : ""),
+    kant: String(g.team?.id) === String(thuis.team.id) ? "thuis" : "uit"
+  })).sort((a, b) => a.volgorde - b.volgorde);
+  return {id: ev.id, start, dag: ymd(start), soort, status, laatste, deel, gebeurtenissen, aantalDoelen: doelen.length, thuis: club(thuis), uit: club(uit)};
 }
 
 async function haalDag(code, dag){
@@ -761,7 +785,7 @@ function tekenFocus(){
     const w = el("div", "fclub");
     if (c.logo){ const im = el("img"); im.src = c.logo; im.alt = ""; w.append(im); } else w.append(el("b", "fafk", c.afk));
     w.append(el("div", "fnaam" + (favs.has(c.id) ? " fav" : ""), (favs.has(c.id) ? "★ " : "") + c.naam));
-    if (c.makers && d.soort !== "voor" && !opTv) w.append(el("div", "fmakers", c.makers));
+    if (c.makers && d.soort !== "voor" && !opTv && !(d.gebeurtenissen || []).length) w.append(el("div", "fmakers", c.makers));
     return w;
   };
   const m = el("div", "fmidden");
@@ -774,6 +798,21 @@ function tekenFocus(){
     vl.style.width = Math.round(d.deel * 1000) / 10 + "%"; bk.append(vl); rij.append(bk);
   }
   lijst.append(rij);
+  const gb = opTv ? [] : (d.gebeurtenissen || []);
+  if (gb.length){
+    lijst.classList.add("metdetails");
+    const tl = el("div", "tijdlijn");
+    for (const g of gb.slice(-7)){
+      const r = el("div", "tlregel " + g.kant);
+      const teken = () => { const i = el("i", "tl-" + g.soort); return i; };
+      const links = el("div", "tlthuis"), rechts = el("div", "tluit");
+      if (g.kant === "thuis"){ links.append(el("span", "", g.wie), teken()); } else { rechts.append(teken(), el("span", "", g.wie)); }
+      r.append(links, el("div", "tlmin", g.min), rechts);
+      tl.append(r);
+    }
+    if (gb.length > 7){ const meer = el("div", "tlmeer", `+ ${gb.length - 7} eerder`); tl.prepend(meer); }
+    lijst.append(tl);
+  }
   if (verzameld.length > 1) lijst.append(el("div", "fteller", `${focusIdx + 1} / ${verzameld.length}`));
 }
 let standTikken = 0;
