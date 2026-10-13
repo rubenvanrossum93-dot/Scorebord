@@ -110,6 +110,14 @@ main.focusvak{display:flex;flex-direction:column;justify-content:center;gap:2vh;
 .fstatus{font-size:6vh;font-weight:700;color:var(--zacht)}
 .fstatus.live{color:var(--live)}
 .fteller{text-align:center;font-size:3vh;color:var(--zacht)}
+/* Stand meeschalen in groot, extra groot en één wedstrijd */
+.groot .standrij,.focus .standrij{grid-template-columns:min(7vh,8vw) min(7vh,8vw) minmax(0,1fr) min(9vh,10vw) min(12vh,12vw) min(11vh,11vw);column-gap:min(2vw,2vh);font-size:min(5.5vh,6vw);min-height:min(9vh,11vw);padding:0 2vw}
+.groot .standrij .wgv,.focus .standrij .wgv{display:none}
+.groot .standrij img,.groot .standrij>span:nth-child(2),.focus .standrij img,.focus .standrij>span:nth-child(2){width:min(6vh,7vw);height:min(6vh,7vw)}
+.groot .standrij.kop,.focus .standrij.kop{font-size:min(3vh,3.5vw);min-height:min(5vh,6vw)}
+.groot main.standtabel,.focus main.standtabel{max-width:none}
+.groot main.standtabel .kop,.focus main.standtabel .kop{font-size:min(3.5vh,4vw)}
+.groot .standnoot,.focus .standnoot{font-size:min(3vh,3.5vw)}
 .pijl{font-size:22px;line-height:1;padding:1px 10px 4px}
 .leeg{padding:30px 0}
 #versie{position:fixed;right:8px;bottom:5px;font-size:11px;color:var(--zacht);opacity:.6;pointer-events:none}
@@ -217,7 +225,7 @@ const codesVan = c => c.codes || [c.code];
 const compVan = code => COMPETITIES.find(c => c.code === code);
 const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
 const KEUZEGROEPEN = [["Nederland",["ned.1","ned.2"]],["Buitenland",["eng.1","esp.1","ger.1","ita.1","fra.1","bel.1"]],["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v32";
+const VERSIE = "v33";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const FAV = -3;           // het tabblad met je favoriete clubs
 const ZOEK = -4;          // zoeken op clubnaam (alleen op telefoon of laptop)
@@ -735,8 +743,11 @@ function tekenFocus(){
   lijst.append(rij);
   if (verzameld.length > 1) lijst.append(el("div", "fteller", `${focusIdx + 1} / ${verzameld.length}`));
 }
+let standTikken = 0;
 setInterval(() => {
   if (formaat !== "focus" || document.body.classList.contains("rust") || !$("flits").hidden) return;
+  if (!verzameld.length && standTikken < 2){ standTikken++; return; }   // stand: 3 x 8 seconden in beeld
+  standTikken = 0;
   if (focusIdx + 1 < verzameld.length){ focusIdx++; teken(); return; }
   focusIdx = 0;
   if (wisselen && actief >= 0) volgende(true); else teken();
