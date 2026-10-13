@@ -111,6 +111,7 @@ main.focusvak{display:flex;flex-direction:column;justify-content:center;gap:2vh;
 .fstand.voor{font-size:16vh;color:var(--zacht)}
 .fstatus{font-size:6vh;font-weight:700;color:var(--zacht)}
 .fstatus.live{color:var(--live)}
+.fstatus.netklaar{color:#e5484d}
 .fteller{text-align:center;font-size:3vh;color:var(--zacht)}
 /* Tijdlijn met doelpunten en kaarten bij "één wedstrijd" */
 main.focusvak.metdetails{justify-content:flex-start;gap:1.2vh;padding-top:1vh}
@@ -186,6 +187,9 @@ main::-webkit-scrollbar{display:none}
 .stand{font-size:clamp(28px,4.4vw,46px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
 .status{font-size:17px;color:var(--zacht);font-weight:600;letter-spacing:.03em}
 .duel.live .status{color:var(--live)}
+.duel.netklaar::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:4px;background:#e5484d;border-radius:2px}
+.duel.netklaar .status{color:#e5484d}
+.duel.netklaar .voortgang span{background:#e5484d}
 .duel.voor .stand{font-size:clamp(22px,3.2vw,34px);color:var(--zacht)}
 main.compact{gap:5px 8px}
 main.compact .duel{padding:5px 12px;min-height:48px;max-height:none}
@@ -256,7 +260,7 @@ const codesVan = c => c.codes || [c.code];
 const compVan = code => COMPETITIES.find(c => c.code === code);
 const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
 const KEUZEGROEPEN = [["Nederland",["ned.1","ned.2"]],["Buitenland",["eng.1","esp.1","ger.1","ita.1","fra.1","bel.1"]],["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v42";
+const VERSIE = "v43";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const FAV = -3;           // het tabblad met je favoriete clubs
 const ZOEK = -4;          // zoeken op clubnaam (alleen op telefoon of laptop)
@@ -281,6 +285,10 @@ const kalender = {};      // code -> [jjjjmmdd] binnen een week rond vandaag
 const fout = {};          // code -> true als ophalen niet lukt
 const standen = {};       // code -> {rijen, ts, mislukt} officiële ranglijst
 const vorige = {};        // wedstrijd-id -> "thuis-uit"
+const vorigeSoort = {}, eindTot = {};   // net afgelopen wedstrijden blijven 15 minuten bij de live wedstrijden staan
+const NA_MIN = 15;
+const netKlaar = d => d.soort === "na" && d.dag === plus(0) && Date.now() < (eindTot[d.id] ?? (d.start.getTime() + (115 + NA_MIN) * 60000));
+const liveOfNet = d => d.soort === "live" || netKlaar(d);
 let favs = new Set();
 try { favs = new Set(JSON.parse(localStorage.getItem("favclubs") || "[]").map(String)); } catch (e) {}
 // De competities waarin je favorieten spelen: daarvan wordt een maand aan uitslagen opgehaald.
@@ -445,6 +453,8 @@ async function haalVandaag(b, goals){
       }
       vorigeRood[d.id] = kaarten; vorigeRoodClub[d.id + d.thuis.id] = d.thuis.rood; vorigeRoodClub[d.id + d.uit.id] = d.uit.rood;
       vorige[d.id] = s;
+      if (vorigeSoort[d.id] === "live" && d.soort === "na") eindTot[d.id] = Date.now() + NA_MIN * 60000;
+      vorigeSoort[d.id] = d.soort;
     }
   } catch (e) { if (!dagen[b.code]) fout[b.code] = true; }
 }
@@ -516,7 +526,7 @@ function regel(d, metStatus, doel, label){
   verzameld.push({d, kop: huidigeKop, label});
   const el = document.createElement("div");
   const opTv = tv.has(d.id) && d.soort !== "voor";
-  el.className = "duel " + d.soort + (opTv ? " optv" : goalTot[d.id] > Date.now() ? " goal" : "");
+  el.className = "duel " + d.soort + (netKlaar(d) ? " netklaar" : "") + (opTv ? " optv" : goalTot[d.id] > Date.now() ? " goal" : "");
   const club = (c, kant, verl) => {
     const w = document.createElement("div"); w.className = "club " + kant + (verl ? " verliezer" : "");
     if (c.logo){ const im = document.createElement("img"); im.src = c.logo; im.alt = c.naam; w.append(im); }
@@ -548,14 +558,15 @@ function regel(d, metStatus, doel, label){
     m.title = opTv ? "Tik om de stand weer te tonen" : "Kijk je deze op tv? Tik om de stand te verbergen";
     m.onclick = () => wisselTv(d.id);
   }
-  const stTekst = opTv ? "op tv · verborgen" : d.status && (metStatus || d.soort !== "na") ? d.status : (label || "");
+  const stTekst = opTv ? "op tv · verborgen" : netKlaar(d) ? "Afgelopen" : d.status && (metStatus || d.soort !== "na") ? d.status : (label || "");
   if (stTekst){ const x = document.createElement("div"); x.className = "status"; x.textContent = stTekst; m.append(x); }
   const tw = d.soort === "na" ? Number(d.thuis.score) > Number(d.uit.score) : null;
   const uw = d.soort === "na" ? Number(d.uit.score) > Number(d.thuis.score) : null;
   el.append(club(d.thuis, "thuis", uw), m, club(d.uit, "uit", tw));
-  if (d.deel !== null && d.deel !== undefined && !opTv){
+  const deelNu = netKlaar(d) ? 1 : d.deel;
+  if (deelNu !== null && deelNu !== undefined && !opTv){
     const bk = document.createElement("div"); bk.className = "voortgang";
-    const vl = document.createElement("span"); vl.style.width = Math.round(d.deel * 1000) / 10 + "%";
+    const vl = document.createElement("span"); vl.style.width = Math.round(deelNu * 1000) / 10 + "%";
     bk.append(vl); el.append(bk);
   }
   doel.append(el);
@@ -565,7 +576,7 @@ function regel(d, metStatus, doel, label){
 // Wordt er nergens gespeeld en begint er de komende 15 minuten niets, dan toont de Hub een rustig, gedimd scherm.
 function rustig(){
   if (!document.body.classList.contains("hub") || Date.now() < wakkerTot) return false;
-  if (BRONNEN.some(b => aantalLive(b.code))) return false;
+  if (BRONNEN.some(b => aantalLive(b.code) || duelsVan(b.code, "vandaag").some(netKlaar))) return false;
   const straks = Date.now() + 15 * 60000;
   return !COMPETITIES.some(c => duelsVan(c.code, "vandaag").some(d => d.soort === "voor" && d.start <= straks && d.start > Date.now() - 5 * 60000));
 }
@@ -665,7 +676,7 @@ function tekenBasis(){
     const rang = x => x.d.dag === nu ? 0 : x.d.dag > nu ? 1 : 2;
     alle.sort((a,b) => rang(a) - rang(b) || (rang(a) === 2 ? b.d.start - a.d.start : a.d.start - b.d.start));
     if (actief === FAV && favLive && alle.length){
-      const live = alle.filter(x => x.d.soort === "live");
+      const live = alle.filter(x => liveOfNet(x.d));
       if (live.length){ alle.length = 0; alle.push(...live); }
       else {
         const vandaag = alle.filter(x => x.d.dag === nu);
@@ -693,8 +704,8 @@ function tekenBasis(){
 
   if (actief === LIVE || actief === ALLES){
     const perComp = COMPETITIES.map(c => ({c, duels: duelsVan(c.code, "vandaag")}));
-    const isLive = perComp.some(x => x.duels.some(d => d.soort === "live"));
-    const groepen = perComp.map(x => ({c: x.c, duels: (actief === LIVE && isLive) ? x.duels.filter(d => d.soort === "live") : x.duels})).filter(x => x.duels.length);
+    const isLive = perComp.some(x => x.duels.some(liveOfNet));
+    const groepen = perComp.map(x => ({c: x.c, duels: (actief === LIVE && isLive) ? x.duels.filter(liveOfNet) : x.duels})).filter(x => x.duels.length);
     const n = groepen.reduce((t, x) => t + x.duels.length, 0);
     lijst.className = n > 6 ? "compact" : "";
     if (!n){ leeg(BRONNEN.some(b => !dagen[b.code] && !fout[b.code]) ? "Standen laden…" : actief === LIVE ? "Vandaag wordt er nergens gespeeld. Kies een competitie voor het programma." : "Vandaag geen wedstrijden."); return; }
@@ -711,7 +722,7 @@ function tekenBasis(){
   if (periode === "maandk") laadMaand(code, true);
   let duels = duelsVan(code, periode);
   // Vastgezet tijdens een speelronde: alleen de wedstrijden die nu bezig zijn.
-  if (vast && periode === "vandaag" && duels.some(d => d.soort === "live")) duels = duels.filter(d => d.soort === "live");
+  if (vast && periode === "vandaag" && duels.some(liveOfNet)) duels = duels.filter(liveOfNet);
   lijst.className = duels.length > 10 || periode !== "vandaag" ? "compact" : "";
   if (!duels.length){
     leeg(codesVan(COMPETITIES[actief]).some(k => !dagen[k] && !fout[k]) ? "Standen laden…"
@@ -802,7 +813,7 @@ function tekenFocus(){
   const m = el("div", "fmidden");
   m.append(el("div", "fstand" + (d.soort === "voor" ? " voor" : ""), opTv ? "TV" : d.soort === "voor" ? d.start.toLocaleTimeString("nl-NL", {hour:"2-digit", minute:"2-digit"}) : `${d.thuis.score} - ${d.uit.score}`));
   const st = opTv ? "op tv · verborgen" : d.status || "";
-  if (st) m.append(el("div", "fstatus" + (d.soort === "live" ? " live" : ""), st));
+  if (st) m.append(el("div", "fstatus" + (d.soort === "live" ? " live" : netKlaar(d) ? " netklaar" : ""), st));
   rij.append(club(d.thuis), m, club(d.uit));
   if (d.deel !== null && d.deel !== undefined && !opTv){
     const bk = el("div", "voortgang fvoortgang"), vl = el("span");
