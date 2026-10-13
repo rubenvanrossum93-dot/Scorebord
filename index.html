@@ -187,7 +187,7 @@ main.compact .duel.live .club small{display:-webkit-box;-webkit-line-clamp:1;fon
   <div class="hoek"><button id="castknop" aria-label="Casten naar je Hub" title="Casten naar je Hub"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path fill="currentColor" d="M1 18v3h3a3 3 0 0 0-3-3zm0-4v2a5 5 0 0 1 5 5h2a7 7 0 0 0-7-7zm0-4v2a9 9 0 0 1 9 9h2A11 11 0 0 0 1 10zm20-7H3a2 2 0 0 0-2 2v3h2V5h18v14h-7v2h7a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/></svg></button><button id="hulp" aria-label="Uitleg" title="Uitleg">?</button><span id="klok"></span></div>
   <div id="periodes" class="rij"></div>
   <div class="knoppen"><button class="wissel" id="standknop" aria-pressed="false" title="Hoe de competitiestand wordt getoond">Stand: volledig</button>
-  <button class="wissel" id="formaat" aria-pressed="false" title="Groot: alleen logo's en standen, goed leesbaar op een klein scherm">Normaal beeld</button>
+  <button class="wissel" id="formaat" aria-pressed="false" title="Groot: alleen logo's en standen, goed leesbaar op een klein scherm">Tussenstand: normaal</button>
   <button class="wissel" id="meld" aria-pressed="false" title="Meldingen bij doelpunten en rode kaarten: voor alle wedstrijden of alleen je favorieten">Alle meldingen</button>
   <button class="wissel" id="wissel" aria-pressed="true" title="Automatisch wisselen tussen competities">Wisselen aan</button></div>
 </header>
@@ -203,7 +203,7 @@ main.compact .duel.live .club small{display:-webkit-box;-webkit-line-clamp:1;fon
 <p><b>Kijk je een wedstrijd op tv?</b> Tik op de stand in het midden. Die wedstrijd wordt verborgen en geeft geen meldingen, zodat het scorebord niets verklapt. Nog een keer tikken toont hem weer.</p>
 <p><b>Casten.</b> Tik op het cast-icoon rechtsboven (in Chrome op Android of een laptop) en kies je Google Home of Chromecast. Je telefoon is daarna de afstandsbediening: wat je hier kiest, zie je op het scherm.</p>
 <p><b>Vastzetten.</b> Tik op "Vast" naast de keuzelijst om één competitie vast te zetten. Het scherm wisselt dan alleen tussen de live wedstrijden en de live stand van die competitie, en geeft alleen meldingen uit die competitie.</p>
-<p><b>Knoppen.</b> "Stand" kiest hoe de competitiestand wordt getoond: uit (dan wisselt het scherm niet naar de stand), volledig, groot, extra groot of 4 clubs per scherm. De beeldknop wisselt tussen normaal, groot, extra groot en één wedstrijd per scherm. "Meldingen" kiest tussen meldingen voor alles of alleen je favorieten. "Wisselen" laat het scherm vanzelf door de competities en standen gaan.</p>
+<p><b>Knoppen.</b> "Stand" kiest hoe de competitiestand wordt getoond: uit (dan wisselt het scherm niet naar de stand), volledig, groot, extra groot of 4 clubs per scherm. "Tussenstand" kiest hoe groot de wedstrijden in beeld komen: normaal, groot, extra groot of één wedstrijd per scherm. "Meldingen" kiest tussen meldingen voor alles of alleen je favorieten. "Wisselen" laat het scherm vanzelf door de competities en standen gaan.</p>
 <p><b>Rustig scherm.</b> Wordt er nergens gespeeld, dan dimt het gecaste scherm na 10 minuten en toont het de klok en de eerstvolgende wedstrijden.</p>
 <button id="uitlegdicht">Sluiten</button>
 </div></div>
@@ -231,7 +231,7 @@ const codesVan = c => c.codes || [c.code];
 const compVan = code => COMPETITIES.find(c => c.code === code);
 const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
 const KEUZEGROEPEN = [["Nederland",["ned.1","ned.2"]],["Buitenland",["eng.1","esp.1","ger.1","ita.1","fra.1","bel.1"]],["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v34";
+const VERSIE = "v35";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const FAV = -3;           // het tabblad met je favoriete clubs
 const ZOEK = -4;          // zoeken op clubnaam (alleen op telefoon of laptop)
@@ -283,7 +283,7 @@ const STANDFORMATEN = [["uit","Stand: uit"],["volledig","Stand: volledig"],["gro
 let standFormaat = "";
 let groot = false, favLive = false;
 // Beeldformaten: normaal, groot (tegels), xl (één tegel per regel), focus (één wedstrijd schermvullend, wisselt vanzelf).
-const FORMATEN = [["normaal","Normaal beeld"],["groot","Groot beeld"],["xl","Extra groot"],["focus","Eén wedstrijd"]];
+const FORMATEN = [["normaal","Tussenstand: normaal"],["groot","Tussenstand: groot"],["xl","Tussenstand: extra groot"],["focus","Tussenstand: één wedstrijd"]];
 const FOCUS_SEC = 8;       // hoe lang elke wedstrijd schermvullend in beeld blijft
 let formaat = "normaal", focusIdx = 0, verzameld = [], huidigeKop = "", focusSleutel = "";   // groot: alleen logo's en standen; favLive: alleen live favorieten
 let alleenFav = false;    // meldingen alleen voor je favoriete clubs
@@ -753,10 +753,13 @@ function tekenFocus(){
   if (verzameld.length > 1) lijst.append(el("div", "fteller", `${focusIdx + 1} / ${verzameld.length}`));
 }
 let standTikken = 0;
+let standKlaar = true;    // op de Hub: is de stand al helemaal naar beneden gegleden?
+const opHub = () => document.body.classList.contains("hub");
 setInterval(() => {
   if (formaat !== "focus" || document.body.classList.contains("rust") || !$("flits").hidden) return;
   const standRondes = {groot: 3, xl: 4, xxl: 6}[standFormaat] || 3;
-  if (!verzameld.length && standTikken < standRondes - 1){ standTikken++; return; }   // stand langer in beeld, zodat hij helemaal door kan glijden
+  if (!verzameld.length && opHub() && !standKlaar) return;   // de Hub gaat pas door als de stand helemaal in beeld is geweest
+  if (!verzameld.length && !opHub() && standTikken < standRondes - 1){ standTikken++; return; }   // stand langer in beeld, zodat hij helemaal door kan glijden
   standTikken = 0;
   if (focusIdx + 1 < verzameld.length){ focusIdx++; teken(); return; }
   focusIdx = 0;
@@ -766,6 +769,7 @@ setInterval(() => {
 function volgende(vanFocus){
   if (formaat === "focus" && vanFocus !== true) return;   // in "één wedstrijd" bepaalt de focus-klok het tempo
   if (!wisselen || actief < 0 || !$("flits").hidden) return;
+  if (wisselStand && opHub() && !standKlaar) return;     // eerst de hele stand laten zien
   if (vast){
     // Alleen wisselen tussen de wedstrijden en de stand van deze competitie.
     const st0 = standen[COMPETITIES[actief].code];
@@ -896,13 +900,20 @@ if (/CrKey/.test(navigator.userAgent)) {
   const glij = nu => {
     const m = document.getElementById("lijst"), max = m.scrollHeight - m.clientHeight;
     const w = actief + "|" + periode + "|" + wisselStand;
-    if (w !== weergave){ weergave = w; pos = 0; wachtTot = nu + WACHT_BOVEN; }
-    if (max <= 4){ pos = 0; }
+    if (w !== weergave){ weergave = w; pos = 0; wachtTot = nu + WACHT_BOVEN; standKlaar = !wisselStand && periode !== "stand"; }
+    if (max <= 4){ pos = 0; if (nu >= wachtTot + 6000) standKlaar = true; }
     else if (nu >= wachtTot){
       pos += SNELHEID * Math.min(nu - vorigeTijd, 100) / 1000;
       if (pos >= max){
         if (pos < max + 1e6){ pos = max + 2e6; wachtTot = nu + WACHT_ONDER; }   // onderaan: even wachten
-        else { pos = 0; wachtTot = nu + WACHT_BOVEN; }                          // daarna terug naar boven
+        else {                                                                    // daarna terug naar boven
+          pos = 0; wachtTot = nu + WACHT_BOVEN;
+          if (wisselStand && !standKlaar){
+            // De stand is helemaal voorbijgekomen: nu door naar de volgende weergave.
+            standKlaar = true; standTikken = 0; focusIdx = 0;
+            setTimeout(() => volgende(formaat === "focus"), 0);
+          }
+        }
       }
     }
     m.scrollTop = Math.min(pos, Math.max(max, 0));
