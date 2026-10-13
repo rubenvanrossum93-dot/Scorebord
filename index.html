@@ -238,7 +238,7 @@ const codesVan = c => c.codes || [c.code];
 const compVan = code => COMPETITIES.find(c => c.code === code);
 const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
 const KEUZEGROEPEN = [["Nederland",["ned.1","ned.2"]],["Buitenland",["eng.1","esp.1","ger.1","ita.1","fra.1","bel.1"]],["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v38";
+const VERSIE = "v39";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const FAV = -3;           // het tabblad met je favoriete clubs
 const ZOEK = -4;          // zoeken op clubnaam (alleen op telefoon of laptop)
@@ -950,7 +950,34 @@ if (/CrKey/.test(navigator.userAgent)) {
   sc.onload = () => {
     const ctx = cast.framework.CastReceiverContext.getInstance();
     ctx.addCustomMessageListener(CAST_KANAAL, e => neemKeuzeOver(typeof e.data === "string" ? JSON.parse(e.data) : e.data));
-    ctx.start({disableIdleTimeout: true, maxInactivity: 3600, customNamespaces: {[CAST_KANAAL]: cast.framework.system.MessageType.JSON}});
+    // Wakker houden: de Hub sluit een cast-app waarin niets "speelt" na ongeveer 10 minuten af.
+    // Daarom "speelt" een onzichtbare speler elke 9 minuten kort een afbeelding (een clublogo). Dat geeft geen geluid
+    // en geen tijdbalk; eventuele bedieningsknoppen die de Hub over het scherm legt, worden meteen weer weggehaald.
+    const speler = document.createElement("cast-media-player");
+    speler.style.display = "none";
+    document.body.append(speler);
+    new MutationObserver(lijst => {
+      for (const m of lijst) for (const n of m.addedNodes){
+        if (n.nodeType !== 1) continue;
+        if (n.tagName === "TOUCH-CONTROLS" || (n.outerHTML || "").includes("--cast-controls")) n.remove();
+      }
+    }).observe(document.documentElement, {childList: true, subtree: true});
+    const wakker = () => {
+      try {
+        const req = new cast.framework.messages.LoadRequestData();
+        req.autoplay = true; req.requestId = 0;
+        req.media = new cast.framework.messages.MediaInformation();
+        req.media.contentId = "https://a.espncdn.com/i/leaguelogos/soccer/500/11.png";
+        req.media.contentType = "image/png";
+        req.media.streamType = cast.framework.messages.StreamType.NONE;
+        req.media.metadata = new cast.framework.messages.GenericMediaMetadata();
+        req.media.metadata.title = "ScoreCasting " + new Date().toLocaleTimeString("nl-NL", {hour: "2-digit", minute: "2-digit"});
+        ctx.getPlayerManager().load(req).catch(() => {});
+      } catch (e) {}
+      setTimeout(wakker, 9 * 60 * 1000);
+    };
+    ctx.addEventListener(cast.framework.system.EventType.READY, () => setTimeout(wakker, 2000));
+    ctx.start({statusText: "ScoreCasting", disableIdleTimeout: true, maxInactivity: 3600, customNamespaces: {[CAST_KANAAL]: cast.framework.system.MessageType.JSON}});
   };
   document.head.append(sc);
 } else {
