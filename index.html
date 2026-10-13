@@ -145,6 +145,13 @@ main{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;display:grid;grid-
 main::-webkit-scrollbar{display:none}
 .kop{grid-column:1/-1;margin:4px 0 0;font-size:17px;font-weight:600;color:var(--zacht);text-transform:uppercase;letter-spacing:.06em}
 .kop:first-child{margin-top:0}
+/* Voortgangsbalk: verstreken speeltijd, subtiel onderaan de wedstrijd */
+.voortgang{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.06);border-radius:0 0 6px 6px;overflow:hidden;pointer-events:none}
+.voortgang span{display:block;height:100%;background:linear-gradient(90deg,rgba(255,210,63,.25),rgba(255,210,63,.65));transition:width 1.5s ease}
+.groot .voortgang{height:max(4px,.9vh)}
+.frij{position:relative}
+.fvoortgang{height:max(5px,1.2vh);border-radius:0 0 10px 10px}
+.duel.goal .voortgang span,.frij.goal .voortgang span{background:var(--veld)}
 .duel{background:var(--vlak);border-radius:6px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:8px 14px;position:relative;min-height:84px}
 .duel.live::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:4px;background:var(--live);border-radius:2px}
 .duel.goal{animation:goal 1s ease-in-out 20}
@@ -231,7 +238,7 @@ const codesVan = c => c.codes || [c.code];
 const compVan = code => COMPETITIES.find(c => c.code === code);
 const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c})));
 const KEUZEGROEPEN = [["Nederland",["ned.1","ned.2"]],["Buitenland",["eng.1","esp.1","ger.1","ita.1","fra.1","bel.1"]],["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v36";
+const VERSIE = "v37";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const FAV = -3;           // het tabblad met je favoriete clubs
 const ZOEK = -4;          // zoeken op clubnaam (alleen op telefoon of laptop)
@@ -322,7 +329,15 @@ function verwerk(ev){
   const club = x => ({rood: rood(x).length, roodWie: (r => r ? ((r.athletesInvolved?.[0]?.shortName || "") + " " + (r.clock?.displayValue || "")).trim() : "")(rood(x).pop()), id: String(x.team.id), naam: nl(x.team.shortDisplayName || x.team.displayName), logo: x.team.logo, afk: x.team.abbreviation || (x.team.shortDisplayName || "").slice(0,3).toUpperCase(), score: x.score, makers: makers(x)});
   const doelen = (c.details || []).filter(g => g.scoringPlay), lg = doelen[doelen.length - 1], la = lg?.athletesInvolved?.[0];
   const laatste = lg ? ((la?.shortName || la?.displayName || "") + " " + (lg.clock?.displayValue || "")).trim() : "";
-  return {id: ev.id, start, dag: ymd(start), soort, status, laatste, aantalDoelen: doelen.length, thuis: club(thuis), uit: club(uit)};
+  // Verstreken speeltijd als deel van de wedstrijd (0 tot 1), voor de voortgangsbalk.
+  let deel = null;
+  if (soort === "live"){
+    const per = Number(c.status.period) || 1, m = parseInt(String(c.status.displayClock || "")) || 0;
+    const totaal = per > 2 ? 120 : 90;
+    deel = t.name === "STATUS_HALFTIME" ? 45 / 90 : Math.min(per === 1 ? Math.min(m, 45) : per === 2 ? Math.min(m, 90) : Math.min(m, 120), totaal) / totaal;
+    if (per > 4) deel = 1;   // strafschoppen
+  }
+  return {id: ev.id, start, dag: ymd(start), soort, status, laatste, deel, aantalDoelen: doelen.length, thuis: club(thuis), uit: club(uit)};
 }
 
 async function haalDag(code, dag){
@@ -503,6 +518,11 @@ function regel(d, metStatus, doel, label){
   const tw = d.soort === "na" ? Number(d.thuis.score) > Number(d.uit.score) : null;
   const uw = d.soort === "na" ? Number(d.uit.score) > Number(d.thuis.score) : null;
   el.append(club(d.thuis, "thuis", uw), m, club(d.uit, "uit", tw));
+  if (d.deel !== null && d.deel !== undefined && !opTv){
+    const bk = document.createElement("div"); bk.className = "voortgang";
+    const vl = document.createElement("span"); vl.style.width = Math.round(d.deel * 1000) / 10 + "%";
+    bk.append(vl); el.append(bk);
+  }
   doel.append(el);
   d.goal = false;
 }
@@ -749,6 +769,10 @@ function tekenFocus(){
   const st = opTv ? "op tv · verborgen" : d.status || "";
   if (st) m.append(el("div", "fstatus" + (d.soort === "live" ? " live" : ""), st));
   rij.append(club(d.thuis), m, club(d.uit));
+  if (d.deel !== null && d.deel !== undefined && !opTv){
+    const bk = el("div", "voortgang fvoortgang"), vl = el("span");
+    vl.style.width = Math.round(d.deel * 1000) / 10 + "%"; bk.append(vl); rij.append(bk);
+  }
   lijst.append(rij);
   if (verzameld.length > 1) lijst.append(el("div", "fteller", `${focusIdx + 1} / ${verzameld.length}`));
 }
