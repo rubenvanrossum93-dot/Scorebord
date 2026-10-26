@@ -155,8 +155,15 @@ main.focusvak.metdetails{justify-content:flex-start;gap:1.2vh;padding-top:1vh}
 .mark{position:absolute;bottom:0;transform:translate(-50%,-25%);width:2.4vh;height:2.4vh;z-index:1}
 .mark.tl-geel,.mark.tl-rood{width:1.6vh;height:2.4vh}
 .voortgang.fvoortgang{overflow:visible}
-.fvoortgang .mark{width:3.6vh;height:3.6vh;transform:translate(-50%,75%)}
-.fvoortgang .mark.tl-geel,.fvoortgang .mark.tl-rood{width:2.4vh;height:3.6vh}
+.fvoortgang .mark{width:3.2vh;height:3.2vh}
+.fvoortgang .mark.tl-geel,.fvoortgang .mark.tl-rood{width:2.2vh;height:3.2vh}
+/* Thuisploeg boven de tijdsbalk, uitploeg eronder */
+.mark.mk-thuis{bottom:100%;top:auto;transform:translate(-50%,-.4vh)}
+.mark.mk-uit{top:100%;bottom:auto;transform:translate(-50%,.4vh)}
+.metdetails .frij{padding-bottom:4.5vh}
+.metdetails .tijdlijn{margin-top:4.5vh}
+.xl .duel{padding-bottom:4vh}
+.xl .voortgang{bottom:3.2vh}
 .xl .voortgang{height:max(5px,1vh);overflow:visible}
 .tlmeer{text-align:center;font-size:2.8vh;color:var(--zacht)}
 /* Standformaten: volledig (alle kolommen), groot (~9 clubs in beeld), xl (~6), xxl (~4) */
@@ -300,7 +307,7 @@ const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c
 // Per land: competitie(s) en beker(s). Elk land heeft in de keuzelijst ook "Alles van ..." voor één overzicht.
 const LANDEN = [["Nederland",["ned.1","ned.2","ned.cup"]],["Engeland",["eng.1","eng.fa","eng.league_cup"]],["Spanje",["esp.1","esp.copa_del_rey"]],["Duitsland",["ger.1","ger.dfb_pokal"]],["Italië",["ita.1","ita.coppa_italia"]],["Frankrijk",["fra.1","fra.coupe_de_france"]],["België",["bel.1"]]];
 const KEUZEGROEPEN = [...LANDEN, ["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v46";
+const VERSIE = "v47";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const FAV = -3;           // het tabblad met je favoriete clubs
 const LAND = -5;          // overzicht van één land: competitie(s) en beker(s)
@@ -570,7 +577,7 @@ function tabKnop(naam, i, n){
 function zetMarkeringen(bk, d){
   for (const g of d.gebeurtenissen || []){
     const p = Math.max(0, Math.min(1, g.volgorde / (g.volgorde > 90 ? 120 : 90)));
-    const i = document.createElement("i"); i.className = "mark tl-" + g.soort; i.style.left = (p * 100) + "%";
+    const i = document.createElement("i"); i.className = "mark tl-" + g.soort + " mk-" + g.kant; i.style.left = (p * 100) + "%";   // thuisploeg boven de balk, uitploeg eronder
     bk.append(i);
   }
 }
