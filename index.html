@@ -248,7 +248,7 @@ main.compact .duel.live .club small{display:-webkit-box;-webkit-line-clamp:1;fon
 <div id="uitleg" hidden role="dialog" aria-label="Zo werkt ScoreCasting"><div class="uitlegvak">
 <h2>Zo werkt ScoreCasting</h2>
 <p><b>Kiezen.</b> Bovenaan kies je Live, Alles, je favorieten (★) of een competitie. Met ‹ en › blader je door de competities.</p>
-<p><b>Per land.</b> In de keuzelijst staan de competities per land, met de beker erbij. Kies "Alles van Engeland" (of een ander land) voor één overzicht van competitie en bekers samen.</p>
+<p><b>Per land.</b> In de keuzelijst staan de competities per land, met de beker erbij. Kies het land zelf, bijvoorbeeld "Engeland", voor één overzicht van competitie en bekers samen.</p>
 <p><b>Favorieten.</b> Tik op een clubnaam om die club te volgen. Onder ★ zie je dan al hun wedstrijden; met "Live" alleen wat nu bezig is.</p>
 <p><b>Kijk je een wedstrijd op tv?</b> Tik op de stand in het midden. Die wedstrijd wordt verborgen en geeft geen meldingen, zodat het scorebord niets verklapt. Nog een keer tikken toont hem weer.</p>
 <p><b>Casten.</b> Tik op het cast-icoon rechtsboven (in Chrome op Android of een laptop) en kies je Google Home of Chromecast. Je telefoon is daarna de afstandsbediening: wat je hier kiest, zie je op het scherm.</p>
@@ -290,7 +290,7 @@ const BRONNEN = COMPETITIES.flatMap(c => codesVan(c).map(code => ({code, comp: c
 // Per land: competitie(s) en beker(s). Elk land heeft in de keuzelijst ook "Alles van ..." voor één overzicht.
 const LANDEN = [["Nederland",["ned.1","ned.2","ned.cup"]],["Engeland",["eng.1","eng.fa","eng.league_cup"]],["Spanje",["esp.1","esp.copa_del_rey"]],["Duitsland",["ger.1","ger.dfb_pokal"]],["Italië",["ita.1","ita.coppa_italia"]],["Frankrijk",["fra.1","fra.coupe_de_france"]],["België",["bel.1"]]];
 const KEUZEGROEPEN = [...LANDEN, ["Europa",["uefa.champions","uefa.europa","uefa.europa.conf"]],["Interlands",["uefa.nations","fifa.worldq.uefa","uefa.euroq","fifa.world","uefa.euro"]]];
-const VERSIE = "v44";
+const VERSIE = "v45";
 const LIVE = -1;          // het tabblad "Live": alle competities door elkaar
 const FAV = -3;           // het tabblad met je favoriete clubs
 const LAND = -5;          // overzicht van één land: competitie(s) en beker(s)
@@ -686,18 +686,19 @@ function tekenBasis(){
     const kies = document.createElement("select");
     kies.id = "kies"; kies.className = "tab kies" + (actief >= 0 || actief === LAND ? " aan" : ""); kies.setAttribute("aria-label", "Competitie kiezen");
     const o0 = document.createElement("option"); o0.value = ""; o0.textContent = "Competitie"; o0.hidden = true; kies.append(o0);
+    const optie = (waarde, tekst, n, ouder) => { const o = document.createElement("option"); o.value = waarde; o.textContent = tekst + (n ? "  ● " + n : ""); (ouder || kies).append(o); };
     for (const [gnaam, codes] of KEUZEGROEPEN){
+      const isLand = LANDEN.some(l => l[0] === gnaam);
+      if (isLand){
+        // Het land zelf is te kiezen (overzicht van competitie en bekers); de competities staan er ingesprongen onder.
+        const nLand = codes.reduce((t, c) => t + aantalLive(c), 0);
+        if (codes.length === 1){ const i = COMPETITIES.findIndex(c => c.code === codes[0]); if (i >= 0) optie(i, gnaam, nLand); continue; }
+        optie("land:" + gnaam, gnaam, nLand);
+        for (const code of codes){ const i = COMPETITIES.findIndex(c => c.code === code); if (i >= 0) optie(i, "\u2003\u2003" + COMPETITIES[i].naam, aantalLive(code)); }
+        continue;
+      }
       const og = document.createElement("optgroup"); og.label = gnaam;
-      if (LANDEN.some(l => l[0] === gnaam) && codes.length > 1){
-        const o = document.createElement("option"); o.value = "land:" + gnaam;
-        const n = codes.reduce((t, c) => t + aantalLive(c), 0);
-        o.textContent = "Alles van " + gnaam + (n ? "  ● " + n : ""); og.append(o);
-      }
-      for (const code of codes){
-        const i = COMPETITIES.findIndex(c => c.code === code); if (i < 0) continue;
-        const o = document.createElement("option"); o.value = i; const n = aantalLive(code);
-        o.textContent = COMPETITIES[i].naam + (n ? "  ● " + n : ""); og.append(o);
-      }
+      for (const code of codes){ const i = COMPETITIES.findIndex(c => c.code === code); if (i >= 0) optie(i, COMPETITIES[i].naam, aantalLive(code), og); }
       kies.append(og);
     }
     kies.value = actief === LAND ? "land:" + gekozenLand : actief >= 0 ? String(actief) : "";
@@ -786,12 +787,19 @@ function tekenBasis(){
     const per = periode === "stand" ? "vandaag" : periode;
     if (per === "maand") land[1].forEach(c => laadMaand(c));
     if (per === "maandk") land[1].forEach(c => laadMaand(c, true));
-    const groepen = land[1].map(code => ({c: compVan(code), duels: duelsVan(code, per)})).filter(g => g.c && g.duels.length);
-    const n = groepen.reduce((t, g) => t + g.duels.length, 0);
+    // Op tijdsvolgorde: eerst wat het eerst gespeeld wordt, met een kopje per dag en competitie.
+    const alle = land[1].flatMap(code => duelsVan(code, per).map(d => ({d, c: compVan(code)}))).filter(x => x.c);
+    alle.sort((a, b) => per === "maand" || per === "vorige" ? b.d.start - a.d.start : a.d.start - b.d.start);
+    const n = alle.length;
     lijst.className = n > 6 || per !== "vandaag" ? "compact" : "";
     if (!n){ leeg(land[1].some(k => !dagen[k] && !fout[k]) ? "Standen laden…" : "Geen wedstrijden in " + gekozenLand + " in deze periode."); return; }
     const kort = d => d.start.toLocaleDateString("nl-NL", {weekday:"short", day:"numeric", month:"short"});
-    for (const g of groepen){ kop(g.c.naam); g.duels.forEach(d => regel(d, per === "vandaag", lijst, per === "vandaag" ? "" : kort(d))); }
+    let vorigeKop = "";
+    for (const x of alle){
+      const k = (per === "vandaag" ? "" : dagLabel(x.d) + " · ") + x.c.naam;
+      if (k !== vorigeKop){ vorigeKop = k; kop(k); }
+      regel(x.d, true, lijst);
+    }
     return;
   }
   if (actief === LIVE || actief === ALLES){
